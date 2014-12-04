@@ -160,6 +160,12 @@ local save_op = {
 	['PNG_COMPRESSION'] = 16,
 }
 
+local line_type_op = {
+	['4-CONNECTION'] = 4,
+	['8-CONNECTION'] = 8,
+	['CV_AA'] = 16,
+}
+
 function _M.load_image(filename, iscolor)
 	if not iscolor then
 		iscolor = 'UNCHANGED' 
@@ -201,6 +207,31 @@ function _M.set_image_roi(self, x, y, w, h)
 		height = h or 0,
 	})
 	return cvHighgui.cvSetImageROI(self.cv_image, rect)
+end
+
+function _M.cv_line(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
+
+	if not self.cv_image then
+		return error("Failed to draw line on image")
+	else
+		local point1 = ffi.new("CvPoint", {
+			x = x1 or 0,
+			y = y1 or 0,
+		})
+		
+		local point2 = ffi.new("CvPoint", {
+			x = x2 or 0,
+			y = y2 or 0,
+		})
+		
+		local color
+		if scalar then
+			color = ffi.new("CvScalar", {val = {scalar[0], scalar[1], scalar[2], scalar[3]}})
+		else
+			color = ffi.new("CvScalar", {val = {255, 255, 255, 255}})
+		end
+		
+	end
 end
 
 
