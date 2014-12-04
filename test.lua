@@ -8,6 +8,6 @@ print(image:get_size())
 
 --[[
 image:save_image("222.png", {
-    ['PNG_COMPRESSION'] = 0,
+	['PNG_COMPRESSION'] = 0,
 })
 --]]

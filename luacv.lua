@@ -130,7 +130,8 @@ ffi.cdef[[
 				int thickness, 
 				int line_type, 
 				int shift);
-				
+	
+	void cvReleaseImage(IplImage** image);
 	void cvCopy(const CvArr* src, CvArr* dst, const CvArr* mask);
 	void cvSetImageROI(IplImage* image, CvRect rect);
 	void cvSetZero(CvArr* arr);
@@ -201,6 +202,15 @@ function _M.set_image_roi(self, x, y, w, h)
 		height = h or 0,
 	})
 	return cvHighgui.cvSetImageROI(self.cv_image, rect)
+end
+
+function _M.release_image(self)
+	
+	--print(string.format("%u", self.cv_image.imageDataOrigin[1]))
+	local p = ffi.new("IplImage *[1]", self.cv_image)
+	p[0] = self.cv_image
+	return cvHighgui.cvReleaseImage(p)
+	--print(string.format("%u", self.cv_image.imageDataOrigin[1]))
 end
 
 
