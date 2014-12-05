@@ -167,6 +167,43 @@ local line_type_op = {
 	['CV_AA'] = 16,
 }
 
+local function cv_rect(x, y, w, h)
+	return ffi.new("CvRect", {
+		x = x or 0,
+		y = y or 0, 
+		width = w or 0, 
+		height = h or 0,
+	})
+end
+
+local function cv_point(x, y)
+	return ffi.new("CvPoint", {
+		x = x or 0,
+		y = y or 0,
+	})
+end
+
+local function cv_scalar(r, g, b, a)
+	r = r or 255
+	g = g or 255
+	b = b or 255
+	a = a or 1
+	return ffi.new("CvScalar", {
+		val = {b, g, r, a}
+	})
+end
+
+local cv_color = cv_scalar
+
+local function cv_size(w, h)
+	return ffi.new("CvSize", {
+		width = w or 0,
+		height = h or 0,
+	})
+end
+
+--[[ +++++++++++++++++++++++++++++++++++++++++++++++ ]]
+
 function _M.load_image(filename, iscolor)
 	if not iscolor then
 		iscolor = 'UNCHANGED' 
@@ -201,12 +238,7 @@ function _M.get_size(self)
 end
 
 function _M.set_image_roi(self, x, y, w, h)
-	local rect = ffi.new("CvRect", {
-		x = x or 0,
-		y = y or 0, 
-		width = w or 0, 
-		height = h or 0,
-	})
+	local rect = cv_rect(x, y, w, h)
 	return cvHighgui.cvSetImageROI(self.cv_image, rect)
 end
 
@@ -215,31 +247,24 @@ function _M.line(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
 	if not self.cv_image then
 		return error("Failed to draw line on image")
 	else
-		local point1 = ffi.new("CvPoint", {
-			x = x1 or 0,
-			y = y1 or 0,
-		})
-		
-		local point2 = ffi.new("CvPoint", {
-			x = x2 or 0,
-			y = y2 or 0,
-		})
+		local point1 = cv_point(x1, y1)
+		local point2 = cv_point(x2, y2)
 		
 		local color
 		if scalar then
-			color = ffi.new("CvScalar", {val = {scalar[0], scalar[1], scalar[2], scalar[3]}})
-			print("aaa")
+			color = cv_scalar(scalar[1], scalar[2], scalar[3], scalar[4])
 		else
-			color = ffi.new("CvScalar", {val = {255, 255, 255, 255}})
+			color = cv_scalar(255, 255, 255, 1)
 		end
 		
 		if not thickness then
-			thickness = 1 
+			thickness = 1
 		end
 		
 		if not line_type then
 			line_type = 'CONNECTION_8'
 		end
+		
 		local line_type_val = line_type_op[line_type] or line_type_op['CONNECTION_8']
 		
 		if not shift then
@@ -251,13 +276,9 @@ function _M.line(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
 end
 
 function _M.release_image(self)
-	
-	--print(string.format("%u", self.cv_image.imageDataOrigin[1]))
-	local p = ffi.new("IplImage *[1]", self.cv_image)
-	p[0] = self.cv_image
-	return cvHighgui.cvReleaseImage(p)
-	--print(string.format("%u", self.cv_image.imageDataOrigin[1]))
-	
+	local pointer = ffi.new("IplImage *[1]")
+	pointer[0] = self.cv_image
+	return cvHighgui.cvReleaseImage(pointer)
 end
 
 
