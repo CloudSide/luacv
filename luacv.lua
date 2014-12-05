@@ -1,5 +1,5 @@
 local ffi = require("ffi")
-local cvCore, cvHighgui = ffi.load("opencv_core"), ffi.load("opencv_highgui")
+local cvCore, cvHighgui, cvImgproc = ffi.load("opencv_core"), ffi.load("opencv_highgui"), ffi.load("opencv_imgproc")
 
 ffi.cdef[[
 
@@ -169,6 +169,16 @@ ffi.cdef[[
 	
 	/* Resizes image (input array is resized to fit the destination array) */
 	void cvResize(const CvArr* src, CvArr* dst, int interpolation);
+	
+	/* dst = src1 * alpha + src2 * beta + gamma */
+	void cvAddWeighted( const CvArr* src1, double alpha,
+	                    const CvArr* src2, double beta,
+	                    double gamma, CvArr* dst );
+	
+	/* Mirror array data around horizontal (flip=0),
+	   vertical (flip=1) or both(flip=-1) axises:
+	   cvFlip(src) flips images vertically and sequences horizontally (inplace) */
+	void cvFlip(const CvArr* src, CvArr* dst, int flip_mode);
 ]]
  
 local _M = {
@@ -322,7 +332,12 @@ local function cv_resize(src, dst, interpolation)
 		interpolation = "INTER_LINEAR"
 	end
 	local interpolation_val = interpolation_op[interpolation] or interpolation_op["INTER_LINEAR"]
-	return cvCore.cvResize(src, dst, interpolation_val);
+	return cvImgproc.cvResize(src, dst, interpolation_val)
+end
+
+--[[ /* dst = src1 * alpha + src2 * beta + gamma */ ]]
+local function cv_add_weighted(src1, alpha, src2, beta, gamma, dst)
+	return cvCore.cvAddWeighted(src1, alpha, src2, beta, gamma, dst)
 end
 
 --[[ +++++++++++++++++++++++++++++++++++++++++++++++ ]]
