@@ -280,7 +280,39 @@ function _M.release_image(self)
 	pointer[0] = self.cv_image
 	return cvHighgui.cvReleaseImage(pointer)
 end
+					
+function _M.rectangle(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
 
+	if not self.cv_image then
+		return error("Failed to draw rectangle on image")
+	else
+		local point1 = cv_point(x1, y1)
+		local point2 = cv_point(x2, y2)
+		
+		local color
+		if scalar then
+			color = cv_scalar(scalar[1], scalar[2], scalar[3], scalar[4])
+		else
+			color = cv_scalar(255, 255, 255, 1)
+		end
+		
+		if not thickness then
+			thickness = 1
+		end
+		
+		if not line_type then
+			line_type = 'CONNECTION_8'
+		end
+		
+		local line_type_val = line_type_op[line_type] or line_type_op['CONNECTION_8']
+		
+		if not shift then
+			shift = 0 
+		end
+		
+		return cvHighgui.cvRectangle(self.cv_image, point1, point2, color, thickness, line_type_val, shift)
+	end
+end
 
 return _M
 
