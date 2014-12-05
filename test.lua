@@ -2,7 +2,7 @@ local luacv = require "luacv"
 
 --test load image
 --[
-local image = luacv.load_image("files/test_3.png", "ANYCOLOR")
+local image = luacv.load_image("files/test.jpg", "ANYCOLOR")
 --]]
 
 --test image roi
@@ -29,6 +29,7 @@ image:ellipse(100, 200, 90, 90, 360, 0, 360, {255,0,255,0}, -1, 'CV_AA')
 image:save_image("files/test_3_ellipse.png")
 --]]
 
-image:crop_for_scale()
+local img = image:resize(100, 50, 'RESIZE_LIMIT')
+img:save_image("files/test_resize.jpg")
 
 image:release_image()
