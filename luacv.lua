@@ -465,6 +465,17 @@ function _M.ellipse(self, x1, y1, w, h, angle, start_angle, end_angle, scalar, t
 	end
 end
 
+function _M.crop_for_scale(self, w, h)
+	
+	if not self.cv_image then
+		return error("Failed to scale image")
+	else
+		local width = w or self.cv_image.width
+		local height
+	end
+	
+end
+
 return _M
 
 
