@@ -132,10 +132,13 @@ ffi.cdef[[
 				int shift);
 	
 	void cvReleaseImage(IplImage** image);
+	void cvReleaseMat(CvMat** mat);
 	void cvCopy(const CvArr* src, CvArr* dst, const CvArr* mask);
 	void cvSetImageROI(IplImage* image, CvRect rect);
 	void cvSetZero(CvArr* arr);
 	IplImage* cvCreateImage(CvSize size, int depth, int channels);
+	void cvResetImageROI( IplImage* image );
+	IplImage* cvCloneImage(const IplImage* image);
 ]]
  
 local _M = {
@@ -202,6 +205,45 @@ local function cv_size(w, h)
 	})
 end
 
+local function cv_create_mat(rows, cols, type)
+	rows = rows or 1
+	cols = cols or 1
+	type = type or 8
+	return cvCore.cvCreateMat(rows, cols, type)
+end
+
+local function cv_release_mat(mat)
+	local pointer = ffi.new("CvMat *[1]")
+	pointer[0] = mat
+	return cvCore.cvReleaseImage(pointer)
+end
+
+local function cv_create_image(w, h, depth, channels)
+	return cvCore.cvCreateImage(cv_size(w, h), depth, channels)
+end
+
+local function cv_release_image(image)
+	local pointer = ffi.new("IplImage *[1]")
+	pointer[0] = image
+	return cvCore.cvReleaseImage(pointer)
+end
+
+local function cv_copy(src, dst, mask)
+	return cvCore.cvCopy(src, dst, mask)
+end
+
+local function cv_reset_image_roi(image)
+	return cvHighgui.cvResetImageROI(image)
+end
+
+local function cv_set_zero(arr)
+	return cvCore.cvSetZero(arr)
+end
+
+local function cv_clone_image(image)
+	return cvCore.cvCloneImage(image)
+end
+
 --[[ +++++++++++++++++++++++++++++++++++++++++++++++ ]]
 
 function _M.load_image(filename, iscolor)
@@ -211,6 +253,10 @@ function _M.load_image(filename, iscolor)
 	local iscolor_val = iscolor_op[iscolor] or iscolor_op['UNCHANGED']
 	local cv_image = cvHighgui.cvLoadImage(filename, iscolor_val)
 	return _M:CV(cv_image)
+end
+
+function _M.clone_image(self)
+	return _M:CV(cv_clone_image(self.cv_image))
 end
 
 function _M.save_image(self, filename, opt)
@@ -276,9 +322,7 @@ function _M.line(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
 end
 
 function _M.release_image(self)
-	local pointer = ffi.new("IplImage *[1]")
-	pointer[0] = self.cv_image
-	return cvHighgui.cvReleaseImage(pointer)
+	return cv_release_image(self.cv_image)
 end
 					
 function _M.rectangle(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
