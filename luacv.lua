@@ -90,6 +90,21 @@ ffi.cdef[[
 	} CvScalar;
 	
 	
+	/* Font structure */
+	typedef struct CvFont {
+		const char* nameFont;   		//Qt:nameFont
+		CvScalar color;       		//Qt:ColorFont -> cvScalar(blue_component, green_component, red\_component[, alpha_component])
+		int         font_face;   		//Qt: bool italic         /* =CV_FONT_* */
+		const int*  ascii;      		/* font data and metrics */
+		const int*  greek;
+		const int*  cyrillic;
+		float       hscale, vscale;
+		float       shear;      		/* slope coefficient: 0 - normal, >0 - italic */
+		int         thickness;    	//Qt: weight               /* letters thickness */
+		float       dx;       		/* horizontal interval between letters */
+		int         line_type;    	//Qt: PointSize
+	} CvFont;
+	
 	/*--------------------------------------------------------------------------------------*/
 	/*											                                            */
 	/*											Functions                                   */
@@ -139,6 +154,18 @@ ffi.cdef[[
 	IplImage* cvCreateImage(CvSize size, int depth, int channels);
 	void cvResetImageROI( IplImage* image );
 	IplImage* cvCloneImage(const IplImage* image);
+	
+	/* Renders text stroke with specified font and color at specified location.
+	   CvFont should be initialized with cvInitFont */
+	void cvPutText( CvArr* img, const char* text, CvPoint org,
+	                const CvFont* font, CvScalar color );
+	
+	/* Initializes font structure used further in cvPutText */
+	void cvInitFont( CvFont* font, int font_face,
+	                 double hscale, double vscale,
+	                 double shear,
+	                 int thickness,
+	                 int line_type);
 ]]
  
 local _M = {
@@ -168,6 +195,18 @@ local line_type_op = {
 	['CONNECTION_4'] = 4,
 	['CONNECTION_8'] = 8,
 	['CV_AA'] = 16,
+}
+
+local font_face_op = {
+	["HERSHEY_SIMPLEX"] = 0,
+	["HERSHEY_PLAIN"] = 1,
+	["HERSHEY_DUPLEX"] = 2,
+	["HERSHEY_COMPLEX"] = 3,
+	["HERSHEY_TRIPLEX"] = 4,
+	["HERSHEY_COMPLEX_SMALL"] = 5,
+	["HERSHEY_SCRIPT_SIMPLEX"] = 6,
+	["HERSHEY_SCRIPT_COMPLEX"] = 7,
+	["ITALIC"] = 16,
 }
 
 local function cv_rect(x, y, w, h)
@@ -242,6 +281,29 @@ end
 
 local function cv_clone_image(image)
 	return cvCore.cvCloneImage(image)
+end
+
+local function cv_init_font(font_face, hscale, vscale, shear, thickness, line_type)
+	if not font_face then
+		font_face = "HERSHEY_SIMPLEX"
+	end
+	local font_face_val = font_face_op[font_face] or font_face_op["HERSHEY_SIMPLEX"]
+	hscale = hscale or 1
+	vscale = vscale or 1
+	shear = shear or 0
+	thickness = thickness or 1
+	if not line_type then
+		line_type = 'CONNECTION_8'
+	end
+	local line_type_val = line_type_op[line_type] or line_type_op['CONNECTION_8']
+	local font = ffi.new("CvFont[1]")
+	cvCore.cvInitFont(font, font_face_val, hscale, vscale, shear, thickness, line_type_val)
+	return font
+end
+
+--[[ org & color should use function cv_point() & cv_scalar() ]]
+local function cv_put_text(img, text, org, font, color)
+	return cvCore.cvPutText(img, text, org, font, color)
 end
 
 --[[ +++++++++++++++++++++++++++++++++++++++++++++++ ]]
