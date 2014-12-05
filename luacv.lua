@@ -230,6 +230,19 @@ local interpolation_op = {
 	["INTER_LANCZOS4"] = 4,
 }
 
+local flip_mode_op = {
+	["V_FLIP"] = 0,
+	["H_FLIP"] = 1,
+	["VH_FLIP"] = -1,
+}
+
+local resize_mode_op = {
+	["RESIZE_SCALE"] = 0, --default
+	["RESIZE_FIT"] = 1,
+	["RESIZE_MFIT"] = 2,
+	["RESIZE_LIMIT"] = 3,
+}
+
 local function cv_rect(x, y, w, h)
 	return ffi.new("CvRect", {
 		x = x or 0,
@@ -338,6 +351,15 @@ end
 --[[ /* dst = src1 * alpha + src2 * beta + gamma */ ]]
 local function cv_add_weighted(src1, alpha, src2, beta, gamma, dst)
 	return cvCore.cvAddWeighted(src1, alpha, src2, beta, gamma, dst)
+end
+
+--[[ V_FLIP | H_FLIP | VH_FLIP ]]
+local function cv_flip(src, dst, flip_mode)
+	if not flip_mode then
+		flip_mode = "V_FLIP"
+	end
+	local flip_mode_val = flip_mode_op[flip_mode] or flip_mode_op["V_FLIP"]
+	return cvFlip(src, dst, flip_mode_val)
 end
 
 --[[ +++++++++++++++++++++++++++++++++++++++++++++++ ]]
