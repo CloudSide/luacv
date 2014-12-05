@@ -166,6 +166,9 @@ ffi.cdef[[
 	                 double shear,
 	                 int thickness,
 	                 int line_type);
+	
+	/* Resizes image (input array is resized to fit the destination array) */
+	void cvResize(const CvArr* src, CvArr* dst, int interpolation);
 ]]
  
 local _M = {
@@ -207,6 +210,14 @@ local font_face_op = {
 	["HERSHEY_SCRIPT_SIMPLEX"] = 6,
 	["HERSHEY_SCRIPT_COMPLEX"] = 7,
 	["ITALIC"] = 16,
+}
+
+local interpolation_op = {
+	["INTER_NN"] = 0,
+	["INTER_LINEAR"] = 1,
+	["INTER_CUBIC"] = 2,
+	["INTER_AREA"] = 3,
+	["INTER_LANCZOS4"] = 4,
 }
 
 local function cv_rect(x, y, w, h)
@@ -304,6 +315,14 @@ end
 --[[ org & color should use function cv_point() & cv_scalar() ]]
 local function cv_put_text(img, text, org, font, color)
 	return cvCore.cvPutText(img, text, org, font, color)
+end
+
+local function cv_resize(src, dst, interpolation)
+	if not interpolation then
+		interpolation = "INTER_LINEAR"
+	end
+	local interpolation_val = interpolation_op[interpolation] or interpolation_op["INTER_LINEAR"]
+	return cvCore.cvResize(src, dst, interpolation_val);
 end
 
 --[[ +++++++++++++++++++++++++++++++++++++++++++++++ ]]
