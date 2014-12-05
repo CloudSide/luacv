@@ -314,6 +314,51 @@ function _M.rectangle(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
 	end
 end
 
+function _M.ellipse(self, x1, y1, w, h, angle, start_angle, end_angle, scalar, thickness, line_type, shift)
+
+	if not self.cv_image then
+		return error("Failed to draw ellipse on image")
+	else
+		local point1 = cv_point(x1, y1)
+		local size = cv_size(w, h)
+		
+		if not angle then
+			angle = 360
+		end
+		
+		if not start_angle then
+			start_angle = 0
+		end
+		
+		if not end_angle then
+			end_angle = 360
+		end
+		
+		local color
+		if scalar then
+			color = cv_scalar(scalar[1], scalar[2], scalar[3], scalar[4])
+		else
+			color = cv_scalar(255, 255, 255, 1)
+		end
+		
+		if not thickness then
+			thickness = 1
+		end
+		
+		if not line_type then
+			line_type = 'CONNECTION_8'
+		end
+		
+		local line_type_val = line_type_op[line_type] or line_type_op['CONNECTION_8']
+		
+		if not shift then
+			shift = 0 
+		end
+		
+		return cvHighgui.cvEllipse(self.cv_image, point1, size, angle, start_angle, end_angle, color, thickness, line_type_val, shift)
+	end
+end
+
 return _M
 
 

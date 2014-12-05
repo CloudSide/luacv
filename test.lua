@@ -23,4 +23,10 @@ image:rectangle(10, 50, 90, 90, {255,0,255,0}, -1, 'CONNECTION_4')
 image:save_image("files/test_3_rectangle.png")
 --]]
 
+--test draw ellipse
+--[
+image:ellipse(100, 200, 90, 90, 360, 0, 360, {255,0,255,0}, -1, 'CV_AA')
+image:save_image("files/test_3_ellipse.png")
+--]]
+
 image:release_image()
