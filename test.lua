@@ -3,6 +3,10 @@ local luacv = require "luacv"
 --test load image
 --[
 local image = luacv.load_image("files/test.jpg", "ANYCOLOR")
+local faces = image:object_detect("haarcascade_frontalface_alt2.xml")
+for i = 1, #faces, 1 do
+	print(faces[i].x, faces[i].y, faces[i].width, faces[i].height)
+end
 --]]
 
 --test image roi
