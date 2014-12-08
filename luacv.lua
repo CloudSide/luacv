@@ -609,10 +609,13 @@ function _M.resize(self, w, h, mode)
 		local o_w = self.cv_image.width
 		local o_h = self.cv_image.height
 		
+		w = w or 0
+		h = h or 0
+		
 		local n_w
 		local n_h
-		if not w then
-			if not h then
+		if w <= 0 then
+			if h <= 0 then
 				n_w = o_w
 				n_h = o_h
 			else
@@ -620,7 +623,7 @@ function _M.resize(self, w, h, mode)
 				n_w = o_w*n_h/o_h
 			end
 		else
-			if not h then
+			if h <= 0 then
 				n_w = w
 				n_h = n_w*o_h/o_w
 			else
