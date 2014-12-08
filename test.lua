@@ -33,7 +33,14 @@ image:ellipse(100, 200, 90, 90, 360, 0, 360, {255,0,255,0}, -1, 'CV_AA')
 image:save_image("files/test_3_ellipse.png")
 --]]
 
+--[[
 local img = image:resize(100, 50, 'RESIZE_LIMIT')
 img:save_image("files/test_resize.jpg")
+--]]
+
+local img = image:fill(100, 100, 'FILL_THUMB', 'GRAVITY_FACE_CENTER')
+--local img = image:fill(1000, 400)
+print(img:get_size())
+img:save_image("files/test_fill.jpg")
 
 image:release_image()
