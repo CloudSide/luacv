@@ -528,8 +528,27 @@ function _M.resize(self, w, h, mode)
 	else
 		local o_w = self.cv_image.width
 		local o_h = self.cv_image.height
-		local n_w = w or self.cv_image.width
-		local n_h = h or self.cv_image.height
+		
+		local n_w
+		local n_h
+		if not w then
+			if not h then
+				n_w = o_w
+				n_h = o_h
+			else
+				n_h = h
+				n_w = o_w*n_h/o_h
+			end
+		else
+			if not h then
+				n_w = w
+				n_h = n_w*o_h/o_w
+			else
+				n_w = w
+				n_h = h
+			end
+		end
+
 		
 		if not mode then
 			mode = 'RESIZE_SCALE'
@@ -538,40 +557,45 @@ function _M.resize(self, w, h, mode)
 		
 		local dst
 		
-		if mode == 'RESIZE_SCALE' then
-			
-		elseif mode == 'RESIZE_FIT' then
-			
-			if o_w/o_h > n_w/n_h then
-				n_h = n_w*o_h/o_w
-			else
-				n_w = o_w*n_h/o_h
-			end
-			
-		elseif mode == 'RESIZE_MFIT' then
-			
-			if o_w/o_h > n_w/n_h then
-				if n_w < o_w then n_w = o_w end
-				n_h = n_w*o_h/o_w
-			else
-				if n_h < o_h then n_h = o_h end
-				n_w = o_w*n_h/o_h
-			end
-			
-		elseif mode == 'RESIZE_LIMIT' then
-			
-			if o_w/o_h > n_w/n_h then
-				if n_w > o_w then n_w = o_w end
-				n_h = n_w*o_h/o_w
-			else
-				if n_h > o_h then n_h = o_h end
-				n_w = o_w*n_h/o_h
-			end
-			
-		end
+		if n_w == o_w and n_h == o_h then
+			dst = cv_clone_image()
+		else
+			if mode == 'RESIZE_SCALE' then
 				
-		dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
-		cv_resize(self.cv_image, dst)
+			elseif mode == 'RESIZE_FIT' then
+				
+				if o_w/o_h > n_w/n_h then
+					n_h = n_w*o_h/o_w
+				else
+					n_w = o_w*n_h/o_h
+				end
+				
+			elseif mode == 'RESIZE_MFIT' then
+				
+				if o_w/o_h > n_w/n_h then
+					if n_w < o_w then n_w = o_w end
+					n_h = n_w*o_h/o_w
+				else
+					if n_h < o_h then n_h = o_h end
+					n_w = o_w*n_h/o_h
+				end
+				
+			elseif mode == 'RESIZE_LIMIT' then
+				
+				if o_w/o_h > n_w/n_h then
+					if n_w > o_w then n_w = o_w end
+					n_h = n_w*o_h/o_w
+				else
+					if n_h > o_h then n_h = o_h end
+					n_w = o_w*n_h/o_h
+				end
+				
+			end
+		
+			dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
+			cv_resize(self.cv_image, dst)
+		end	
+		
 		return _M:CV(dst)
 	end
 	
