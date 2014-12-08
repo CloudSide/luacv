@@ -581,6 +581,29 @@ local resize_mode_op = {
 	["RESIZE_LIMIT"] = 3,
 }
 
+local fill_mode_op = {
+	["FILL_DEFAULT"] = 0, --default
+	["FILL_LIMIT"] = 1,
+	["FILL_THUMB"] = 2,
+}
+
+local gravity_op = {
+	["GRAVITY_CENTER"] = 0, --default
+	["GRAVITY_NORTH_WEST"] = 1,
+	["GRAVITY_NORTH"] = 2,
+	["GRAVITY_NORTH_EAST"] = 3,
+	["GRAVITY_WEST"] = 4,
+	["GRAVITY_EAST"] = 5,
+	["GRAVITY_SOUTH_WEST"] = 6,
+	["GRAVITY_SOUTH"] = 7,
+	["GRAVITY_SOUTH_EAST"] = 8,
+	["GRAVITY_XY_CENTER"] = 9,
+	["GRAVITY_FACE"] = 10,
+	["GRAVITY_FACES"] = 11,
+	["GRAVITY_FACE_CENTER"] = 12,
+	["GRAVITY_FACES_CENTER"] = 13,
+}
+
 local function cv_rect(x, y, w, h)
 	return ffi.new("CvRect", {
 		x = x or 0,
@@ -858,12 +881,12 @@ function _M.rectangle(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
 	end
 end
 
-function _M.ellipse(self, x1, y1, w, h, angle, start_angle, end_angle, scalar, thickness, line_type, shift)
+function _M.ellipse(self, x, y, w, h, angle, start_angle, end_angle, scalar, thickness, line_type, shift)
 
 	if not self.cv_image then
 		return error("Failed to draw ellipse on image")
 	else
-		local point1 = cv_point(x1, y1)
+		local point = cv_point(x, y)
 		local size = cv_size(w, h)
 		
 		if not angle then
@@ -899,7 +922,7 @@ function _M.ellipse(self, x1, y1, w, h, angle, start_angle, end_angle, scalar, t
 			shift = 0 
 		end
 		
-		return cvHighgui.cvEllipse(self.cv_image, point1, size, angle, start_angle, end_angle, color, thickness, line_type_val, shift)
+		return cvHighgui.cvEllipse(self.cv_image, point, size, angle, start_angle, end_angle, color, thickness, line_type_val, shift)
 	end
 end
 
