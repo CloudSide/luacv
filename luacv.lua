@@ -587,6 +587,12 @@ local fill_mode_op = {
 	["FILL_THUMB"] = 2,
 }
 
+local pad_mode_op = {
+	["PAD_DEFAULT"] = 0, --default
+	["PAD_LIMIT"] = 1,
+	["PAD_M_LIMIT"] = 2,
+}
+
 local gravity_op = {
 	["GRAVITY_CENTER"] = 0, --default
 	["GRAVITY_NORTH_WEST"] = 1,
