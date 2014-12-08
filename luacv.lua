@@ -10,6 +10,7 @@ ffi.cdef[[
 	/*---------------------------------------------------------------------------------------*/
 
 	typedef unsigned char uchar;
+	typedef signed char schar;
 	
 	typedef struct CvMat {
 	    int type;
@@ -105,6 +106,70 @@ ffi.cdef[[
 		int         line_type;    	//Qt: PointSize
 	} CvFont;
 	
+	
+	/****************************************************************************************\
+	*                                   Dynamic Data structures                              *
+	\****************************************************************************************/
+
+	/******************************** Memory storage ****************************************/
+
+	typedef struct CvMemBlock {
+	    struct CvMemBlock*  prev;
+	    struct CvMemBlock*  next;
+	} CvMemBlock;
+
+	typedef struct CvMemStorage {
+	    int signature;
+	    CvMemBlock* bottom;           /* First allocated block.                   */
+	    CvMemBlock* top;              /* Current memory block - top of the stack. */
+	    struct  CvMemStorage* parent; /* We get new blocks from parent as needed. */
+	    int block_size;               /* Block size.                              */
+	    int free_space;               /* Remaining free space in current block.   */
+	} CvMemStorage;
+	
+	typedef struct CvMemStoragePos {
+	    CvMemBlock* top;
+	    int free_space;
+	} CvMemStoragePos;
+	
+	
+	/*********************************** Sequence *******************************************/
+
+	typedef struct CvSeqBlock {
+		
+		struct CvSeqBlock*  prev; 	/* Previous sequence block.                   */
+		struct CvSeqBlock*  next; 	/* Next sequence block.                       */
+		int start_index;				/* Index of the first element in the block +  */
+	                              	/* sequence->first->start_index.              */
+		int count;             		/* Number of elements in the block.           */
+		schar* data;              	/* Pointer to the first element of the block. */
+	} CvSeqBlock;
+
+
+	/*
+	   Read/Write sequence.
+	   Elements can be dynamically inserted to or deleted from the sequence.
+	*/
+
+	typedef struct CvSeq {
+		int       flags;             /* Miscellaneous flags.     */      
+		int       header_size;       /* Size of sequence header. */      
+		struct    CvSeq* h_prev; 		/* Previous sequence.       */      
+		struct    CvSeq* h_next; 		/* Next sequence.           */      
+		struct    CvSeq* v_prev; 		/* 2nd previous sequence.   */    
+		struct    CvSeq* v_next;  	/* 2nd next sequence.       */
+		                                        
+		int       total;          	/* Total number of elements.            */  
+		int       elem_size;      	/* Size of sequence element in bytes.   */  
+		schar*    block_max;    	  	/* Maximal bound of the last block.     */ 
+		schar*    ptr;          	  	/* Current write pointer.               */  
+		int       delta_elems;    	/* Grow seq this many at a time.        */  
+		CvMemStorage* storage;    	/* Where the seq is stored.             */  
+		CvSeqBlock* free_blocks;  	/* Free blocks list.                    */  
+		CvSeqBlock* first;        	/* Pointer to the first sequence block. */
+	} CvSeq;
+
+	
 	/*--------------------------------------------------------------------------------------*/
 	/*											                                            */
 	/*											Functions                                   */
@@ -179,6 +244,21 @@ ffi.cdef[[
 	   vertical (flip=1) or both(flip=-1) axises:
 	   cvFlip(src) flips images vertically and sequences horizontally (inplace) */
 	void cvFlip(const CvArr* src, CvArr* dst, int flip_mode);
+	
+	void* cvLoad( const char* filename,
+	              CvMemStorage* memstorage,
+	              const char* name,
+	              const char** real_name );
+	
+	void cvCvtColor( const CvArr* src, CvArr* dst, int code );
+	
+	void cvEqualizeHist( const CvArr* src, CvArr* dst );
+	
+	CvMemStorage* cvCreateMemStorage( int block_size );
+	
+	void cvReleaseMemStorage( CvMemStorage** storage );
+	
+	schar* cvGetSeqElem( const CvSeq* seq, int index );
 ]]
  
 local _M = {
