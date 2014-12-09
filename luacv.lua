@@ -1118,42 +1118,22 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 		
 		if fill_mode == 'FILL_THUMB' then
 			
-			local faces = self:object_detect('haarcascade_frontalface_alt2.xml')
+			local faces, group_rect = self:object_detect('haarcascade_frontalface_alt2.xml')
 			
 			if #faces > 0 then
 				if gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER' then
 					
-					local min_x = faces[1].x
-					local min_x_index = 1
-					local min_y = faces[1].y
-					local min_y_index = 1
-					local max_x = faces[1].x
-					local max_x_index = 1
-					local max_y = faces[1].y
-					local max_y_index = 1
-					
-					for i = 1, #faces, 1 do
-						if faces[i].x > max_x then
-							max_x = faces[i].x
-							max_x_index = i
-						elseif faces[i].x < min_x then
-							min_x = faces[i].x
-							min_x_index = i
-						end
-						
-						if faces[i].y > max_y then
-							max_y = faces[i].y
-							max_y_index = i
-						elseif faces[i].y < min_y then
-							min_y = faces[i].y
-							min_y_index = i
-						end
+					if gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' then
+						w_roi = faces[1].width
+						h_roi = faces[1].height
+						x_roi = faces[1].x
+						y_roi = faces[1].y
+					else
+						w_roi = group_rect.width
+						h_roi = group_rect.height
+						x_roi = group_rect.x
+						y_roi = group_rect.y
 					end
-					
-					w_roi = (max_x + faces[max_x_index].width) > o_w and (o_w - min_x) or (max_x - min_x + faces[max_x_index].width)
-					h_roi = (max_y + faces[max_y_index].height) > o_h and (o_h - min_y) or (max_y - min_y + faces[max_y_index].height)
-					x_roi = min_x
-					y_roi = min_y
 				end
 				
 				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
@@ -1218,40 +1198,36 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 			x_roi = o_w - w_roi
 			y_roi = o_h - h_roi
 		elseif gravity_mode == 'GRAVITY_XY_CENTER' then
+			
 			return error("GRAVITY_XY_CENTER only can be used for corp")
---			x = x or 0
---			y = y or 0
---			
---			if (x <= w_roi / 2)  then
---				x_roi = 0
---			elseif (x > o_w - w_roi / 2) then
---				x_roi = o_w - w_roi / 2
---			end
---			
---			if (y <= h_roi / 2)  then
---				y_roi = 0
---			elseif (y > o_h - h_roi / 2) then
---				y_roi = o_h - h_roi / 2
---			end
 			
 		elseif gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER' then
 			
-			local faces = object_detect('haarcascade_frontalface_alt2.xml')
-			
+			local faces, group_rect = self:object_detect('haarcascade_frontalface_alt2.xml')
+
 			if #faces > 0 then
 				
-				--逻辑要用测试图看例子效果
-				
---				if n_w/n_h >= o_w/o_h then
---					w_roi = (n_w > o_w) and o_w or n_w
---					h_roi = n_h*w_roi/n_w
---				else
---					h_roi = (n_h > o_h) and o_h or n_h
---					w_roi = h_roi*n_w/n_h
---				end
---				
---				x_roi = faces[1].x 
---				y_roi = faces[1].y
+				if gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' then
+					if n_w/n_h >= o_w/o_h then
+						y_roi = faces[1].y + (faces[1].height - h_roi) / 2
+						y_roi = (y_roi+h_roi) <= o_h and y_roi or (o_h - h_roi)
+						x_roi = 0
+					else
+						x_roi = faces[1].x + (faces[1].width - w_roi) / 2
+						x_roi = (x_roi+w_roi) <= o_w and x_roi or (o_w - w_roi)
+						y_roi = 0
+					end
+				else
+					if n_w/n_h >= o_w/o_h then
+						y_roi = group_rect.y + (group_rect.height - h_roi) / 2
+						y_roi = (y_roi+h_roi) <= o_h and y_roi or (o_h - h_roi)
+						x_roi = 0
+					else
+						x_roi = group_rect.x + (group_rect.width - w_roi) / 2
+						x_roi = (x_roi+w_roi) <= o_w and x_roi or (o_w - w_roi)
+						y_roi = 0
+					end
+				end
 				
 			else
 			
@@ -1267,12 +1243,66 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 			
 		end
 		
-		
 		self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
 		dst = self:resize(n_w, n_h)
 		return dst
 	end
 	
+end
+
+--未完成版
+function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)
+
+	if not self.cv_image or not src.cv_image then
+		return error("Failed to overlay image")
+	else
+		local o_w = src.cv_image.width
+		local o_h = src.cv_image.height
+		
+		x = x or 0
+		y = y or 0
+		w = w or 0
+		h = h or 0
+		
+		local n_w
+		local n_h
+		if w <= 0 then
+			if h <= 0 then
+				n_w = o_w
+				n_h = o_h
+			else
+				n_h = h
+				n_w = o_w*n_h/o_h
+			end
+		else
+			if h <= 0 then
+				n_w = w
+				n_h = n_w*o_h/o_w
+			else
+				n_w = w
+				n_h = h
+			end
+		end
+		
+		n_w = n_w > src.cv_image.width and src.cv_image.width or n_w
+		n_h = n_h > src.cv_image.height and src.cv_image.height or n_h
+		
+		if not fill_mode then
+			fill_mode = 'OVERLAY_BADGE'
+		end
+		
+		if not gravity_mode then
+			gravity_mode = 'GRAVITY_SOUTH_EAST'
+		end
+		
+		
+		self:set_image_roi(x, y, n_w, n_h)
+		src:set_image_roi(0, 0, n_w, n_h)
+		cv_add_weighted(self.cv_image, 1-alpha, src.cv_image, alpha, 0.0, self.cv_image)
+		cv_reset_image_roi(self.cv_image)
+		
+		return self
+	end
 end
 
 return _M

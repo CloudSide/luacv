@@ -2,7 +2,7 @@ local luacv = require "luacv"
 
 --test load image
 --[
-local image = luacv.load_image("files/test.jpg", "ANYCOLOR")
+local image = luacv.load_image("files/test_0x11.png", "ANYCOLOR")
 local faces = image:object_detect("haarcascade_frontalface_alt2.xml")
 for i = 1, #faces, 1 do
 	print(faces[i].x, faces[i].y, faces[i].width, faces[i].height)
@@ -38,9 +38,15 @@ local img = image:resize(100, 50, 'RESIZE_LIMIT')
 img:save_image("files/test_resize.jpg")
 --]]
 
-local img = image:fill(100, 100, 'FILL_THUMB', 'GRAVITY_FACE_CENTER')
+--[[
+local img = image:fill(1000, 50, 'FILL_DEFULT', 'GRAVITY_FACES')
 --local img = image:fill(1000, 400)
 print(img:get_size())
 img:save_image("files/test_fill.jpg")
+--]]
+
+local src = luacv.load_image("files/test_1.jpg", "ANYCOLOR")
+local img = image:overlay(src, 200, 200, 200, 200, 1)
+img:save_image("files/test_overlay.jpg")
 
 image:release_image()
