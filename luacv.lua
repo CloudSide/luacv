@@ -948,17 +948,39 @@ function _M.object_detect(self, casc, find_biggest_object)
 	end
 	local faces = cv_haar_detect_objects(gray, cascade, storage, 1.06, 3, flags, cv_size(self.cv_image.width / 100, self.cv_image.height / 100), cv_size(0, 0))
 	local rects = {}
+	local x_min, y_min, x_max, y_max, idx_x_max, idx_y_max
 	if faces and faces.total > 0 then
 		for i=0, (faces.total - 1) do
 			local rect = cv_get_seq_elem(faces, i)
 			rect = ffi.cast("CvRect *", rect)
+			if (not x_min) or (x_min > rect.x) then
+				x_min = rect.x
+			end
+			if (not y_min) or (y_min > rect.y) then
+				y_min = rect.y
+			end
+			if (not x_max) or (x_max < rect.x) then
+				x_max = rect.x
+				idx_x_max = i + 1
+			end
+			if (not y_max) or (y_max < rect.y) then
+				y_max = rect.y
+				idx_y_max = i + 1
+			end
 			table.insert(rects, rect)
 		end
 	end
 	cv_release_mem_storage(storage_cascade)
 	cv_release_mem_storage(storage)
 	cv_release_image(gray)
-	return rects
+	local group_rect
+	if #rects > 0 then
+		local g_x, g_y = x_min, y_min
+		local g_w = x_max - x_min + rects[idx_x_max].width
+		local g_h = y_max - y_min + rects[idx_y_max].height
+		group_rect = cv_rect(g_x, g_y, g_w, g_h)
+	end
+	return rects, group_rect
 end
 
 function _M.resize(self, w, h, mode)
