@@ -932,7 +932,7 @@ function _M.ellipse(self, x, y, w, h, angle, start_angle, end_angle, scalar, thi
 	end
 end
 
-function _M.object_detect(self, casc)
+function _M.object_detect(self, casc, find_biggest_object)
 	local storage_cascade = cv_create_mem_storage(0)
 	local cascade = cv_load(casc, storage_cascade)
 	if not cascade then
@@ -942,7 +942,11 @@ function _M.object_detect(self, casc)
 	cv_cvt_color(self.cv_image, gray, ffi.C.CV_BGR2GRAY)
 	cv_equalize_hist(gray, gray)
 	local storage = cv_create_mem_storage(0)
-	local faces = cv_haar_detect_objects(gray, cascade, storage, 1.1, 2, 1, cv_size(0, 0), cv_size(0, 0))
+	local flags = 3
+	if find_biggest_object then
+		flags = 15
+	end
+	local faces = cv_haar_detect_objects(gray, cascade, storage, 1.06, 3, flags, cv_size(self.cv_image.width / 100, self.cv_image.height / 100), cv_size(0, 0))
 	local rects = {}
 	if faces and faces.total > 0 then
 		for i=0, (faces.total - 1) do
