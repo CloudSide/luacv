@@ -52,10 +52,16 @@ print(img:get_size())
 img:save_image("files/test_thumb.jpg")
 --]]
 
---[
+--[[
 local img = image:crop(109000,100,250, 250)
 print(img:get_size())
 img:save_image("files/test_crop.jpg")
+--]]
+
+--[
+local img = image:pad(1200, 1000, 'PAD_LIMIT', 'GRAVITY_WEST', {255,0,255,1})
+print(img:get_size())
+img:save_image("files/test_pad.jpg")
 --]]
 
 --[[

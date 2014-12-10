@@ -1360,12 +1360,6 @@ function _M.crop(self, x, y, w, h)
 	end
 end
 
---[[
-["PAD_DEFAULT"] = 0, --default
-["PAD_LIMIT"] = 1,
-["PAD_M_LIMIT"] = 2,
---]]
-
 function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 
 	if not self.cv_image then
@@ -1397,15 +1391,83 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 			end
 		end
 		
-		x, y = cv_center_of_gravity(self, gravity_mode)
+		if not gravity_mode then
+			gravity_mode = 'GRAVITY_NORTH'
+		end
 		
-		local dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
+		if (gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER' or gravity_mode == 'GRAVITY_XY_CENTER') then
+			return error("FACE or XY_CENTER gravity can only be used with crop, fill, lfill or thumb")
+		end
 		
-		self:set_image_roi(x, y, n_w, n_h)
-		src:set_image_roi(0, 0, n_w, n_h)
-		cv_add_weighted(self.cv_image, 1-alpha, src.cv_image, alpha, 0.0, self.cv_image)
-		cv_reset_image_roi(self.cv_image)
-		return _M:CV(dst)
+		if not pad_mode then
+			pad_mode = 'PAD_DEFAULT'
+		end
+		
+		local color
+		if pad_color then
+			color = cv_scalar(pad_color[1], pad_color[2], pad_color[3], pad_color[4])
+		else
+			color = cv_scalar(255, 255, 255, 1)
+		end
+		
+		
+		local src
+		local dst
+		local x
+		local y
+
+		
+		dst = _M:CV(cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels))
+		cv_set(dst.cv_image, color)
+		
+		x, y = cv_center_of_gravity(dst, gravity_mode)
+		print(x,y)
+		if pad_mode == 'PAD_DEFAULT' then
+			x = (x + n_w > dst.cv_image.width) and (dst.cv_image.width - n_w) or x
+			y = (y + n_h > dst.cv_image.height) and (dst.cv_image.height - n_h) or y
+			
+			if n_w/n_h > o_w/o_h then
+				n_w = o_w/o_h*n_h
+				src = self:resize(n_w, n_h, '', 'INTER_AREA')
+			else
+				n_h = n_w*o_h/o_w
+				src = self:resize(n_w, n_h, '', 'INTER_AREA')
+			end
+		elseif pad_mode == 'PAD_LIMIT' then
+			
+			if n_w/n_h > o_w/o_h then
+				n_h = n_h > o_h and o_h or n_h
+				n_w = o_w/o_h*n_h
+				src = self:resize(n_w, n_h, '', 'INTER_AREA')
+			else
+				n_w = n_w > o_w and o_w or n_w
+				n_h = n_w*o_h/o_w
+				src = self:resize(n_w, n_h, '', 'INTER_AREA')
+			end
+			x = (x + n_w > dst.cv_image.width) and (dst.cv_image.width - n_w) or (x - n_w/2)
+			y = (y + n_h > dst.cv_image.height) and (dst.cv_image.height - n_h) or y
+			print(x,y)
+		elseif pad_mode == 'PAD_M_LIMIT' then
+			
+			if n_w/n_h > o_w/o_h then
+				n_w = o_w/o_h*n_h
+				src = self:resize(n_w, n_h, '', 'INTER_AREA')
+			else
+				n_h = n_w*o_h/o_w
+				src = self:resize(n_w, n_h, '', 'INTER_AREA')
+			end
+			x = (x + n_w > dst.cv_image.width) and (dst.cv_image.width - n_w) or x
+			y = (y + n_h > dst.cv_image.height) and (dst.cv_image.height - n_h) or y
+		end
+		
+		
+		
+		dst:set_image_roi(x, y, n_w, n_h)
+		cv_add_weighted(dst.cv_image, 0, src.cv_image, 1, 0.0, dst.cv_image)
+		cv_reset_image_roi(dst.cv_image)
+		
+		src:release_image()
+		return dst
 		
 	end
 end
