@@ -33,6 +33,15 @@ ffi.cdef[[
 	    int cols;
 	} CvMat;
 	
+	typedef struct _IplROI
+	{
+	    int  coi; /* 0 - no COI (all channels are selected), 1 - 0th channel is selected ...*/
+	    int  xOffset;
+	    int  yOffset;
+	    int  width;
+	    int  height;
+	} IplROI;
+	
 	typedef struct _IplImage {
 	    int		nSize;						/* sizeof(IplImage) */
 	    int		ID;							/* version (=0)*/
@@ -773,6 +782,66 @@ local function cv_release_mem_storage(storage)
 	return cvCore.cvReleaseMemStorage(pointer);
 end
 
+local function cv_center_of_gravity(image, gravity_mode)
+
+	local x, y
+	local faces_rect = nil
+	
+	if gravity_mode == 'GRAVITY_CENTER' then
+		x = image.cv_image.width / 2
+		y = image.cv_image.height / 2
+	elseif gravity_mode == 'GRAVITY_NORTH_WEST' then
+		x = 0
+		y = 0
+	elseif gravity_mode == 'GRAVITY_NORTH' then
+		x = image.cv_image.width / 2
+		y = 0
+	elseif gravity_mode == 'GRAVITY_NORTH_EAST' then
+		x = image.cv_image.width
+		y = 0
+	elseif gravity_mode == 'GRAVITY_WEST' then
+		x = 0
+		y = image.cv_image.height / 2
+	elseif gravity_mode == 'GRAVITY_EAST' then
+		x = image.cv_image.width
+		y = image.cv_image.height / 2
+	elseif gravity_mode == 'GRAVITY_SOUTH_WEST' then
+		x = 0
+		y = image.cv_image.height
+	elseif gravity_mode == 'GRAVITY_SOUTH' then
+		x = image.cv_image.width / 2
+		y = image.cv_image.height
+	elseif gravity_mode == 'GRAVITY_SOUTH_EAST' then
+		x = image.cv_image.width
+		y = image.cv_image.height
+	elseif gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' then
+		
+		local faces, group_rect = image:object_detect('haarcascade_frontalface_alt2.xml', 1)
+		if #faces > 0 then
+			x = faces[1].x + faces[1].width / 2
+			y = faces[1].y + faces[1].height / 2
+			faces_rect = group_rect
+		else
+			x = image.cv_image.width / 2
+			y = (gravity_mode == 'GRAVITY_FACE') and 0 or image.cv_image.height / 2
+		end
+		
+	elseif gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER' then
+		
+		local faces, group_rect = image:object_detect('haarcascade_frontalface_alt2.xml')
+		if #faces > 0 then
+			x = group_rect.x + group_rect.width / 2
+			y = group_rect.y + group_rect.height / 2
+			faces_rect = group_rect
+		else
+			x = image.cv_image.width / 2
+			y = (gravity_mode == 'GRAVITY_FACES') and 0 or image.cv_image.height / 2
+		end
+	end
+	
+	return x, y, faces_rect;
+end
+
 --[[ +++++++++++++++++++++++++++++++++++++++++++++++ ]]
 
 function _M.load_image(filename, iscolor)
@@ -983,7 +1052,7 @@ function _M.object_detect(self, casc, find_biggest_object)
 	return rects, group_rect
 end
 
-function _M.resize(self, w, h, mode)
+function _M.resize(self, w, h, mode, interpolation)
 	
 	if not self.cv_image then
 		return error("Failed to scale image")
@@ -1058,7 +1127,7 @@ function _M.resize(self, w, h, mode)
 			end
 		
 			dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
-			cv_resize(self.cv_image, dst)
+			cv_resize(self.cv_image, dst, interpolation)
 		end	
 		
 		return _M:CV(dst)
@@ -1106,7 +1175,10 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 		if not gravity_mode then
 			gravity_mode = 'GRAVITY_CENTER'
 		end
-				
+		
+		if gravity_mode == 'GRAVITY_XY_CENTER' then
+			return error("GRAVITY_XY_CENTER only can be used for corp")
+		end
 		
 		local dst
 		local h_roi
@@ -1117,36 +1189,7 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 		
 		
 		if fill_mode == 'FILL_THUMB' then
-			
-			local faces, group_rect = self:object_detect('haarcascade_frontalface_alt2.xml')
-			
-			if #faces > 0 then
-				if gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER' then
-					
-					if gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' then
-						w_roi = faces[1].width
-						h_roi = faces[1].height
-						x_roi = faces[1].x
-						y_roi = faces[1].y
-					else
-						w_roi = group_rect.width
-						h_roi = group_rect.height
-						x_roi = group_rect.x
-						y_roi = group_rect.y
-					end
-				end
-				
-				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
-				dst = self:resize(n_w, n_h)
-				return dst
-			else
-				if gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACES' then
-					gravity_mode = 'GRAVITY_NORTH'
-				elseif gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES_CENTER' then
-					gravity_mode = 'GRAVITY_CENTER'
-				end
-			end
-			
+			return self:thumb(w, h, gravity_mode)
 		end
 		
 		
@@ -1160,94 +1203,202 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 		
 		
 		
+		x_roi, y_roi = cv_center_of_gravity(self, gravity_mode)
+		
 		if n_w/n_h >= o_w/o_h then
-			w_roi = (n_w > o_w) and o_w or n_w
+			w_roi = o_w
 			h_roi = n_h*w_roi/n_w
+			x_roi = 0
+			y_roi = (y_roi - h_roi / 2) > 0 and (y_roi - h_roi / 2) or 0
 		else
-			h_roi = (n_h > o_h) and o_h or n_h
+			h_roi = o_h
 			w_roi = h_roi*n_w/n_h
+			x_roi = (x_roi - w_roi / 2) > 0 and (x_roi - w_roi / 2) or 0
+			y_roi = 0
 		end
 		
-		
-
-		if gravity_mode == 'GRAVITY_CENTER' then
-			x_roi = (o_w - w_roi) / 2
-			y_roi = (o_h - h_roi) / 2
-		elseif gravity_mode == 'GRAVITY_NORTH_WEST' then
-			x_roi = 0
-			y_roi = 0
-		elseif gravity_mode == 'GRAVITY_NORTH' then
-			x_roi = (o_w - w_roi) / 2
-			y_roi = 0
-		elseif gravity_mode == 'GRAVITY_NORTH_EAST' then
-			x_roi = o_w - w_roi
-			y_roi = 0
-		elseif gravity_mode == 'GRAVITY_WEST' then
-			x_roi = 0
-			y_roi = (o_h - h_roi) / 2
-		elseif gravity_mode == 'GRAVITY_EAST' then
-			x_roi = o_w - w_roi
-			y_roi = (o_h - h_roi) / 2
-		elseif gravity_mode == 'GRAVITY_SOUTH_WEST' then
-			x_roi = 0
-			y_roi = o_h - h_roi
-		elseif gravity_mode == 'GRAVITY_SOUTH' then
-			x_roi = (o_w - w_roi) / 2
-			y_roi = o_h - h_roi
-		elseif gravity_mode == 'GRAVITY_SOUTH_EAST' then
-			x_roi = o_w - w_roi
-			y_roi = o_h - h_roi
-		elseif gravity_mode == 'GRAVITY_XY_CENTER' then
-			
-			return error("GRAVITY_XY_CENTER only can be used for corp")
-			
-		elseif gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER' then
-			
-			local faces, group_rect = self:object_detect('haarcascade_frontalface_alt2.xml')
-
-			if #faces > 0 then
-				
-				if gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' then
-					if n_w/n_h >= o_w/o_h then
-						y_roi = faces[1].y + (faces[1].height - h_roi) / 2
-						y_roi = (y_roi+h_roi) <= o_h and y_roi or (o_h - h_roi)
-						x_roi = 0
-					else
-						x_roi = faces[1].x + (faces[1].width - w_roi) / 2
-						x_roi = (x_roi+w_roi) <= o_w and x_roi or (o_w - w_roi)
-						y_roi = 0
-					end
-				else
-					if n_w/n_h >= o_w/o_h then
-						y_roi = group_rect.y + (group_rect.height - h_roi) / 2
-						y_roi = (y_roi+h_roi) <= o_h and y_roi or (o_h - h_roi)
-						x_roi = 0
-					else
-						x_roi = group_rect.x + (group_rect.width - w_roi) / 2
-						x_roi = (x_roi+w_roi) <= o_w and x_roi or (o_w - w_roi)
-						y_roi = 0
-					end
-				end
-				
-			else
-			
-				if gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACES' then
-					x_roi = (o_w - w_roi) / 2
-					y_roi = 0
-				else
-					x_roi = (o_w - w_roi) / 2
-					y_roi = (o_h - h_roi) / 2
-				end
-				
-			end
-			
-		end
 		
 		self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
-		dst = self:resize(n_w, n_h)
+		dst = self:resize(n_w, n_h, '', 'INTER_AREA')
 		return dst
 	end
+end
+
+function _M.thumb(self, w, h, gravity_mode)
+
+	if not self.cv_image then
+		return error("Failed to get thumb")
+	else
+		local o_w = self.cv_image.width
+		local o_h = self.cv_image.height
+		
+		w = w or 0
+		h = h or 0
+		
+		local n_w
+		local n_h
+		if w <= 0 then
+			if h <= 0 then
+				n_w = o_w
+				n_h = o_h
+			else
+				n_h = h
+				n_w = o_w*n_h/o_h
+			end
+		else
+			if h <= 0 then
+				n_w = w
+				n_h = n_w*o_h/o_w
+			else
+				n_w = w
+				n_h = h
+			end
+		end
+		
+		
+		if not gravity_mode then
+			gravity_mode = 'GRAVITY_FACE'
+		end
+		
+		if not (gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER') then
+			return error("thumbnail using face detection in combination with the 'face' or 'faces' gravity")
+		end
+		
+		
+		if (n_w > o_w or n_h > o_h) then
+			return self:fill(n_w, n_h, '', gravity_mode)
+		else
+			local dst
+			local h_roi
+			local w_roi
+			local x_roi
+			local y_roi
+			local faces_rect
 	
+			x_roi, y_roi, faces_rect = cv_center_of_gravity(self, gravity_mode)
+			
+			if (n_w < faces_rect.width or n_h < faces_rect.height) then
+				
+				local face_rect_increase_rate = 0.82
+				w_roi = faces_rect.width * face_rect_increase_rate * 2
+				h_roi = faces_rect.height * face_rect_increase_rate * 2
+				x_roi = (x_roi - faces_rect.width * face_rect_increase_rate) > 0 and (x_roi - faces_rect.width * face_rect_increase_rate) or 0
+				y_roi = (y_roi - faces_rect.height * face_rect_increase_rate) > 0 and (y_roi - faces_rect.height * face_rect_increase_rate) or 0
+				n_w = n_w < n_h and n_w or n_h
+				n_h = n_w
+				
+				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
+				dst = self:resize(n_w, n_h, '', 'INTER_AREA')
+				return dst
+			else
+				h_roi = n_h
+				w_roi = n_w
+				x_roi = (x_roi - w_roi / 2) > 0 and (x_roi - w_roi / 2) or 0
+				y_roi = (y_roi - h_roi / 2) > 0 and (y_roi - h_roi / 2) or 0
+				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
+				dst = cv_clone_image(self.cv_image)
+				return _M:CV(dst)
+			end
+		end
+	end
+end
+
+
+function _M.crop(self, x, y, w, h)
+
+	if not self.cv_image then
+		return error("Failed to crop the image")
+	else
+		local o_w = self.cv_image.width
+		local o_h = self.cv_image.height
+		
+		x = x or 0
+		y = y or 0
+		w = w or 0
+		h = h or 0
+		
+		local n_w
+		local n_h
+		if w <= 0 then
+			if h <= 0 then
+				n_w = o_w
+				n_h = o_h
+			else
+				n_h = h
+				n_w = o_w*n_h/o_h
+			end
+		else
+			if h <= 0 then
+				n_w = w
+				n_h = n_w*o_h/o_w
+			else
+				n_w = w
+				n_h = h
+			end
+		end
+		
+		if (x > o_w or y > o_h or x + n_w < 1 or y + n_h < 1) then
+			x = 0
+			y = 0
+			n_w = 1
+			n_h = 1
+		end
+		
+		self:set_image_roi(x, y, n_w, n_h)
+		dst = cv_clone_image(self.cv_image)
+		return _M:CV(dst)
+		
+	end
+end
+
+--[[
+["PAD_DEFAULT"] = 0, --default
+["PAD_LIMIT"] = 1,
+["PAD_M_LIMIT"] = 2,
+--]]
+
+function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
+
+	if not self.cv_image then
+		return error("Failed to pad the image")
+	else
+		local o_w = self.cv_image.width
+		local o_h = self.cv_image.height
+
+		w = w or 0
+		h = h or 0
+		
+		local n_w
+		local n_h
+		if w <= 0 then
+			if h <= 0 then
+				n_w = o_w
+				n_h = o_h
+			else
+				n_h = h
+				n_w = o_w*n_h/o_h
+			end
+		else
+			if h <= 0 then
+				n_w = w
+				n_h = n_w*o_h/o_w
+			else
+				n_w = w
+				n_h = h
+			end
+		end
+		
+		x, y = cv_center_of_gravity(self, gravity_mode)
+		
+		local dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
+		
+		self:set_image_roi(x, y, n_w, n_h)
+		src:set_image_roi(0, 0, n_w, n_h)
+		cv_add_weighted(self.cv_image, 1-alpha, src.cv_image, alpha, 0.0, self.cv_image)
+		cv_reset_image_roi(self.cv_image)
+		return _M:CV(dst)
+		
+	end
 end
 
 --未完成版

@@ -2,7 +2,9 @@ local luacv = require "luacv"
 
 --test load image
 --[
-local image = luacv.load_image("files/test_0x11.png", "ANYCOLOR")
+local image = luacv.load_image("files/test_0x1.jpg", "ANYCOLOR")
+
+--[[
 local faces = image:object_detect("haarcascade_frontalface_alt2.xml")
 for i = 1, #faces, 1 do
 	print(faces[i].x, faces[i].y, faces[i].width, faces[i].height)
@@ -12,7 +14,7 @@ end
 --test image roi
 --[[
 image:set_image_roi(100, 100, 100, 100)
-image:save_image("files/test_3_set_image_roi.png", {['PNG_COMPRESSION'] = 0})
+image:save_image("files/test_3_set_image_roi.jpg")
 --]]
 
 --test draw line
@@ -39,14 +41,27 @@ img:save_image("files/test_resize.jpg")
 --]]
 
 --[[
-local img = image:fill(1000, 50, 'FILL_DEFULT', 'GRAVITY_FACES')
---local img = image:fill(1000, 400)
+local img = image:fill(200, 200, 'FILL_DEFULT', 'GRAVITY_SOUTH_WEST')
 print(img:get_size())
 img:save_image("files/test_fill.jpg")
 --]]
 
+--[[
+local img = image:thumb(250, 250, 'GRAVITY_FACE')
+print(img:get_size())
+img:save_image("files/test_thumb.jpg")
+--]]
+
+--[
+local img = image:crop(109000,100,250, 250)
+print(img:get_size())
+img:save_image("files/test_crop.jpg")
+--]]
+
+--[[
 local src = luacv.load_image("files/test_1.jpg", "ANYCOLOR")
 local img = image:overlay(src, 200, 200, 200, 200, 1)
 img:save_image("files/test_overlay.jpg")
+--]]
 
 image:release_image()
