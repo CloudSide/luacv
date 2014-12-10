@@ -526,6 +526,9 @@ ffi.cdef[[
 								  int flags,
 	                     		  CvSize min_size, 
 								  CvSize max_size);
+								
+	/* Sets all or "masked" elements of input array to the same value */
+	void cvSet(CvArr* arr, CvScalar value, const CvArr* mask);
 ]]
  
 local _M = {
@@ -840,6 +843,12 @@ local function cv_center_of_gravity(image, gravity_mode)
 	end
 	
 	return x, y, faces_rect;
+end
+
+--[[ Sets all or "masked" elements of input array to the same value ]]
+-- mask default nil
+local function cv_set(arr, value, mask)
+	return cvCore.cvSet(arr, value, mask)
 end
 
 --[[ +++++++++++++++++++++++++++++++++++++++++++++++ ]]
