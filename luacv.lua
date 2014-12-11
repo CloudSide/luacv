@@ -1478,6 +1478,47 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 	end
 end
 
+function _M.round_corner(self, radius)
+
+	if not self.cv_image then
+		return error("Failed to round corner the image")
+	else
+		radius = radius or 0
+		
+		if self.cv_image.width > self.cv_image.height  then
+			radius = radius > self.cv_image.height / 2 and  self.cv_image.height / 2 or radius
+			radius = radius < 0 and self.cv_image.height / 2 or radius
+		else
+			radius = radius > self.cv_image.width / 2 and  self.cv_image.width / 2 or radius
+			radius = radius < 0 and self.cv_image.width / 2 or radius
+		end
+		
+		local mask = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
+
+		if (radius == 0) then
+			mask:rectangle(0, 0, self.cv_image.width, self.cv_image.height, {255,255,255,1}, -1, 'CV_AA')
+		else
+			mask:line(radius, 0, self.cv_image.width - radius, 0, {255,255,255,1}, 0, 'CV_AA')
+			mask:line(self.cv_image.width, radius, self.cv_image.width, self.cv_image.height - radius, {255,255,255,1}, 0, 'CV_AA')
+			mask:line(radius, self.cv_image.height, self.cv_image.width - radius, self.cv_image.height, {255,255,255,1}, 0, 'CV_AA')
+			mask:line(0, radius, self.cv_image.width, self.cv_image.height - radius, {255,255,255,1}, 0, 'CV_AA')
+			
+			mask:rectangle(radius, 0, self.cv_image.width - radius, self.cv_image.height, {255,255,255,1}, -1, 'CV_AA')
+			mask:rectangle(0, radius, self.cv_image.width, self.cv_image.height - radius, {255,255,255,1}, -1, 'CV_AA')
+				
+			mask:ellipse(radius+2, radius+2, radius, radius, 360, 180, 270, {255,255,255,1}, -1, 'CV_AA')
+			mask:ellipse(self.cv_image.width - radius+1, radius+2, radius, radius, 360, 270, 360, {255,255,255,1}, -1, 'CV_AA')
+			mask:ellipse(self.cv_image.width - radius+1, self.cv_image.height - radius+1, radius, radius, 360, 0, 90, {255,255,255,1}, -1, 'CV_AA')
+			mask:ellipse(radius+2, self.cv_image.height - radius+1, radius, radius, 360, 180, 90, {255,255,255,1}, -1, 'CV_AA')
+		end
+			
+		local dst = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
+		cv_set(dst.cv_image, cv_scalar(255, 255, 255, 1))
+		cv_copy(self.cv_image, dst.cv_image, mask.cv_image)
+		return dst
+	end
+end
+
 --未完成版
 --function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)
 --

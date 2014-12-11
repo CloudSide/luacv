@@ -2,7 +2,7 @@ local luacv = require "luacv"
 
 --test load image
 --[
-local image = luacv.load_image("files/test.jpg", "ANYCOLOR")
+local image = luacv.load_image("files/test_0x1.jpg", "ANYCOLOR")
 
 --[[
 local faces = image:object_detect("haarcascade_frontalface_alt2.xml")
@@ -58,10 +58,16 @@ print(img:get_size())
 img:save_image("files/test_crop.jpg")
 --]]
 
---[
+--[[
 local img = image:pad(80, 800, 'PAD_LIMIT', nil, {255,0,255,1})
 print(img:get_size())
 img:save_image("files/test_pad.jpg")
+--]]
+
+--[
+local img = image:round_corner(-100)
+print(img:get_size())
+img:save_image("files/test_round_corner.jpg")
 --]]
 
 --[[
