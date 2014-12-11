@@ -1101,7 +1101,7 @@ function _M.resize(self, w, h, mode, interpolation)
 		local dst
 		
 		if n_w == o_w and n_h == o_h then
-			dst = cv_clone_image()
+			dst = cv_clone_image(self.cv_image)
 		else
 			if mode == 'RESIZE_SCALE' then
 				
@@ -1415,54 +1415,60 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 		local dst
 		local x
 		local y
+		local resize_h
+		local resize_w 
 
 		
-		dst = _M:CV(cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels))
-		cv_set(dst.cv_image, color)
-		
-		x, y = cv_center_of_gravity(dst, gravity_mode)
-		print(x,y)
 		if pad_mode == 'PAD_DEFAULT' then
-			x = (x + n_w > dst.cv_image.width) and (dst.cv_image.width - n_w) or x
-			y = (y + n_h > dst.cv_image.height) and (dst.cv_image.height - n_h) or y
 			
 			if n_w/n_h > o_w/o_h then
-				n_w = o_w/o_h*n_h
-				src = self:resize(n_w, n_h, '', 'INTER_AREA')
+				resize_h = n_h
+				resize_w = o_w / o_h * resize_h
 			else
-				n_h = n_w*o_h/o_w
-				src = self:resize(n_w, n_h, '', 'INTER_AREA')
+				resize_w = n_w
+				resize_h = resize_w * o_h / o_w
 			end
+			
 		elseif pad_mode == 'PAD_LIMIT' then
 			
 			if n_w/n_h > o_w/o_h then
-				n_h = n_h > o_h and o_h or n_h
-				n_w = o_w/o_h*n_h
-				src = self:resize(n_w, n_h, '', 'INTER_AREA')
+				resize_h = n_h > o_h and o_h or n_h
+				resize_w = o_w / o_h * resize_h
 			else
-				n_w = n_w > o_w and o_w or n_w
-				n_h = n_w*o_h/o_w
-				src = self:resize(n_w, n_h, '', 'INTER_AREA')
+				resize_w = n_w > o_w and o_w or n_w
+				resize_h = resize_w * o_h / o_w
 			end
-			x = (x + n_w > dst.cv_image.width) and (dst.cv_image.width - n_w) or (x - n_w/2)
-			y = (y + n_h > dst.cv_image.height) and (dst.cv_image.height - n_h) or y
-			print(x,y)
+
 		elseif pad_mode == 'PAD_M_LIMIT' then
-			
-			if n_w/n_h > o_w/o_h then
-				n_w = o_w/o_h*n_h
-				src = self:resize(n_w, n_h, '', 'INTER_AREA')
-			else
-				n_h = n_w*o_h/o_w
-				src = self:resize(n_w, n_h, '', 'INTER_AREA')
-			end
-			x = (x + n_w > dst.cv_image.width) and (dst.cv_image.width - n_w) or x
-			y = (y + n_h > dst.cv_image.height) and (dst.cv_image.height - n_h) or y
+			resize_w = o_w
+			resize_h = o_h
+			n_w = n_w < o_w and o_w or n_w
+			n_h = n_h < o_h and o_h or n_h
 		end
 		
+
+		dst = _M:CV(cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels))
+		cv_set(dst.cv_image, color)
+		x, y = cv_center_of_gravity(dst, gravity_mode)
+		src = self:resize(resize_w, resize_h, '', 'INTER_AREA')
+
+		if x > n_w/2 then
+			x = n_w - resize_w
+		elseif x < n_w/2 then
+			x = 0
+		else
+			x = x - resize_w/2
+		end
 		
+		if y > n_h/2 then
+			y = n_h - resize_h
+		elseif y < n_h/2 then
+			y = 0
+		else
+			y = y - resize_h/2
+		end
 		
-		dst:set_image_roi(x, y, n_w, n_h)
+		dst:set_image_roi(x, y, resize_w, resize_h)
 		cv_add_weighted(dst.cv_image, 0, src.cv_image, 1, 0.0, dst.cv_image)
 		cv_reset_image_roi(dst.cv_image)
 		
@@ -1473,59 +1479,59 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 end
 
 --未完成版
-function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)
-
-	if not self.cv_image or not src.cv_image then
-		return error("Failed to overlay image")
-	else
-		local o_w = src.cv_image.width
-		local o_h = src.cv_image.height
-		
-		x = x or 0
-		y = y or 0
-		w = w or 0
-		h = h or 0
-		
-		local n_w
-		local n_h
-		if w <= 0 then
-			if h <= 0 then
-				n_w = o_w
-				n_h = o_h
-			else
-				n_h = h
-				n_w = o_w*n_h/o_h
-			end
-		else
-			if h <= 0 then
-				n_w = w
-				n_h = n_w*o_h/o_w
-			else
-				n_w = w
-				n_h = h
-			end
-		end
-		
-		n_w = n_w > src.cv_image.width and src.cv_image.width or n_w
-		n_h = n_h > src.cv_image.height and src.cv_image.height or n_h
-		
-		if not fill_mode then
-			fill_mode = 'OVERLAY_BADGE'
-		end
-		
-		if not gravity_mode then
-			gravity_mode = 'GRAVITY_SOUTH_EAST'
-		end
-		
-		
-		self:set_image_roi(x, y, n_w, n_h)
-		src:set_image_roi(0, 0, n_w, n_h)
-		cv_add_weighted(self.cv_image, 1-alpha, src.cv_image, alpha, 0.0, self.cv_image)
-		cv_reset_image_roi(self.cv_image)
-		
-		return self
-	end
-end
+--function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)
+--
+--	if not self.cv_image or not src.cv_image then
+--		return error("Failed to overlay image")
+--	else
+--		local o_w = src.cv_image.width
+--		local o_h = src.cv_image.height
+--		
+--		x = x or 0
+--		y = y or 0
+--		w = w or 0
+--		h = h or 0
+--		
+--		local n_w
+--		local n_h
+--		if w <= 0 then
+--			if h <= 0 then
+--				n_w = o_w
+--				n_h = o_h
+--			else
+--				n_h = h
+--				n_w = o_w*n_h/o_h
+--			end
+--		else
+--			if h <= 0 then
+--				n_w = w
+--				n_h = n_w*o_h/o_w
+--			else
+--				n_w = w
+--				n_h = h
+--			end
+--		end
+--		
+--		n_w = n_w > src.cv_image.width and src.cv_image.width or n_w
+--		n_h = n_h > src.cv_image.height and src.cv_image.height or n_h
+--		
+--		if not fill_mode then
+--			fill_mode = 'OVERLAY_BADGE'
+--		end
+--		
+--		if not gravity_mode then
+--			gravity_mode = 'GRAVITY_SOUTH_EAST'
+--		end
+--		
+--		
+--		self:set_image_roi(x, y, n_w, n_h)
+--		src:set_image_roi(0, 0, n_w, n_h)
+--		cv_add_weighted(self.cv_image, 1-alpha, src.cv_image, alpha, 0.0, self.cv_image)
+--		cv_reset_image_roi(self.cv_image)
+--		
+--		return self
+--	end
+--end
 
 return _M
 
