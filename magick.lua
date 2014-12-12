@@ -23,6 +23,7 @@ ffi.cdef([[
   } StorageType;
 
   void MagickWandGenesis();
+  void MagickSetFirstIterator(MagickWand*);
   MagickWand* NewMagickWand();
   MagickWand* DestroyMagickWand(MagickWand*);
   MagickBooleanType MagickReadImage(MagickWand*, const char*);
@@ -361,6 +362,9 @@ do
       end
       return lib.MagickSetImageGravity(self.wand, type)
     end,
+	set_first_iterator = function(self)
+		return lib.MagickSetFirstIterator(self.wand)
+	end,
     strip = function(self)
       return lib.MagickStripImage(self.wand)
     end,
