@@ -862,6 +862,11 @@ function _M.load_image(filename, iscolor)
 	return _M:CV(cv_image)
 end
 
+function _M.create_image(w, h, depth, channels)
+	local cv_image = cv_create_image(w, h, depth, channels)
+	return _M:CV(cv_image)
+end
+
 function _M.clone_image(self)
 	return _M:CV(cv_clone_image(self.cv_image))
 end
