@@ -2,7 +2,7 @@ local luacv = require "luacv"
 
 --test load image
 --[
-local image = luacv.load_image("files/test_0x1.jpg", "ANYCOLOR")
+local image = luacv.load_image("files/alpha.png", "UNCHANGED")
 
 --[[
 local faces = image:object_detect("haarcascade_frontalface_alt2.xml")
@@ -19,8 +19,8 @@ image:save_image("files/test_3_set_image_roi.jpg")
 
 --test draw line
 --[[
-image:line(10, 50, 90, 50, {255,255,255,0}, 10, 'CONNECTION_4')
-image:save_image("files/test_3_line.png")
+image:line(10, 50, 90, 50, {255,255,255,1}, 10, 'CONNECTION_4')
+image:save_image("files/test_3_line.jpg")
 --]]
 
 --test draw rectangle
@@ -65,9 +65,9 @@ img:save_image("files/test_pad.jpg")
 --]]
 
 --[
-local img = image:round_corner(-100)
+local img = image:round_corner(0)
 print(img:get_size())
-img:save_image("files/test_round_corner.jpg")
+img:save_image("files/test_round_corner.png")
 --]]
 
 --[[

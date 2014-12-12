@@ -642,7 +642,7 @@ local function cv_scalar(r, g, b, a)
 	r = r or 255
 	g = g or 255
 	b = b or 255
-	a = a or 1
+	a = a or 255
 	return ffi.new("CvScalar", {
 		val = {b, g, r, a}
 	})
@@ -916,7 +916,7 @@ function _M.line(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
 		if scalar then
 			color = cv_scalar(scalar[1], scalar[2], scalar[3], scalar[4])
 		else
-			color = cv_scalar(255, 255, 255, 1)
+			color = cv_scalar(255, 255, 255, 255)
 		end
 		
 		if not thickness then
@@ -953,7 +953,7 @@ function _M.rectangle(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
 		if scalar then
 			color = cv_scalar(scalar[1], scalar[2], scalar[3], scalar[4])
 		else
-			color = cv_scalar(255, 255, 255, 1)
+			color = cv_scalar(255, 255, 255, 255)
 		end
 		
 		if not thickness then
@@ -998,7 +998,7 @@ function _M.ellipse(self, x, y, w, h, angle, start_angle, end_angle, scalar, thi
 		if scalar then
 			color = cv_scalar(scalar[1], scalar[2], scalar[3], scalar[4])
 		else
-			color = cv_scalar(255, 255, 255, 1)
+			color = cv_scalar(255, 255, 255, 255)
 		end
 		
 		if not thickness then
@@ -1416,7 +1416,7 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 		if pad_color then
 			color = cv_scalar(pad_color[1], pad_color[2], pad_color[3], pad_color[4])
 		else
-			color = cv_scalar(255, 255, 255, 1)
+			color = cv_scalar(255, 255, 255, 255)
 		end
 		
 		
@@ -1487,12 +1487,22 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 	end
 end
 
-function _M.round_corner(self, radius)
+function _M.round_corner(self, radius, bg_color)
 
 	if not self.cv_image then
 		return error("Failed to round corner the image")
 	else
+	
+		local background_color
+		if not bg_color then
+			background_color = cv_scalar(255, 255, 255, 255)
+		else
+			background_color = cv_scalar(bg_color[0], bg_color[1], bg_color[2], bg_color[3])
+		end
+
 		radius = radius or 0
+		
+		local line_color = cv_scalar(255, 255, 255, 255)
 		
 		if self.cv_image.width > self.cv_image.height  then
 			radius = radius > self.cv_image.height / 2 and  self.cv_image.height / 2 or radius
@@ -1505,28 +1515,38 @@ function _M.round_corner(self, radius)
 		local mask = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
 
 		if (radius == 0) then
-			mask:rectangle(0, 0, self.cv_image.width, self.cv_image.height, {255,255,255,1}, -1, 'CV_AA')
+			mask:rectangle(0, 0, self.cv_image.width, self.cv_image.height, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
 		else
-			mask:line(radius, 0, self.cv_image.width - radius, 0, {255,255,255,1}, 0, 'CV_AA')
-			mask:line(self.cv_image.width, radius, self.cv_image.width, self.cv_image.height - radius, {255,255,255,1}, 0, 'CV_AA')
-			mask:line(radius, self.cv_image.height, self.cv_image.width - radius, self.cv_image.height, {255,255,255,1}, 0, 'CV_AA')
-			mask:line(0, radius, self.cv_image.width, self.cv_image.height - radius, {255,255,255,1}, 0, 'CV_AA')
+			mask:line(radius, 0, self.cv_image.width - radius, 0, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, 0, 'CV_AA')
+			mask:line(self.cv_image.width, radius, self.cv_image.width, self.cv_image.height - radius, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, 0, 'CV_AA')
+			mask:line(radius, self.cv_image.height, self.cv_image.width - radius, self.cv_image.height, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, 0, 'CV_AA')
+			mask:line(0, radius, self.cv_image.width, self.cv_image.height - radius, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, 0, 'CV_AA')
 			
-			mask:rectangle(radius, 0, self.cv_image.width - radius, self.cv_image.height, {255,255,255,1}, -1, 'CV_AA')
-			mask:rectangle(0, radius, self.cv_image.width, self.cv_image.height - radius, {255,255,255,1}, -1, 'CV_AA')
+			mask:rectangle(radius, 0, self.cv_image.width - radius, self.cv_image.height, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:rectangle(0, radius, self.cv_image.width, self.cv_image.height - radius, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
 				
-			mask:ellipse(radius+2, radius+2, radius, radius, 360, 180, 270, {255,255,255,1}, -1, 'CV_AA')
-			mask:ellipse(self.cv_image.width - radius+1, radius+2, radius, radius, 360, 270, 360, {255,255,255,1}, -1, 'CV_AA')
-			mask:ellipse(self.cv_image.width - radius+1, self.cv_image.height - radius+1, radius, radius, 360, 0, 90, {255,255,255,1}, -1, 'CV_AA')
-			mask:ellipse(radius+2, self.cv_image.height - radius+1, radius, radius, 360, 180, 90, {255,255,255,1}, -1, 'CV_AA')
+			mask:ellipse(radius+2, radius+2, radius, radius, 360, 180, 270, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:ellipse(self.cv_image.width - radius+1, radius+2, radius, radius, 360, 270, 360, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:ellipse(self.cv_image.width - radius+1, self.cv_image.height - radius+1, radius, radius, 360, 0, 90, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:ellipse(radius+2, self.cv_image.height - radius+1, radius, radius, 360, 180, 90, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
 		end
 			
 		local dst = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
-		cv_set(dst.cv_image, cv_scalar(255, 255, 255, 1))
+		cv_set(dst.cv_image, background_color)
 		cv_copy(self.cv_image, dst.cv_image, mask.cv_image)
 		return dst
 	end
 end
+
+--function _M.background_color(self, bg_color)
+--
+--	if not self.cv_image then
+--		return error("Failed to set background color to the image")
+--	else
+--		
+--	end
+--
+--end
 
 --未完成版
 --function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)
