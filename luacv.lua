@@ -867,6 +867,10 @@ function _M.create_image(w, h, depth, channels)
 	return _M:CV(cv_image)
 end
 
+function _M.get_image_data(self)
+	return self.cv_image.imageData
+end
+
 function _M.clone_image(self)
 	return _M:CV(cv_clone_image(self.cv_image))
 end
