@@ -1506,16 +1506,16 @@ function _M.round_corner(self, radius, bg_color)
 		
 		if self.cv_image.width > self.cv_image.height  then
 			radius = radius > self.cv_image.height / 2 and  self.cv_image.height / 2 or radius
-			radius = radius < 0 and self.cv_image.height / 2 or radius
 		else
 			radius = radius > self.cv_image.width / 2 and  self.cv_image.width / 2 or radius
-			radius = radius < 0 and self.cv_image.width / 2 or radius
 		end
 		
 		local mask = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
 
 		if (radius == 0) then
 			mask:rectangle(0, 0, self.cv_image.width, self.cv_image.height, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+		elseif (radius < 0) then
+			mask:ellipse(self.cv_image.width/2, self.cv_image.height/2, self.cv_image.width/2.01, self.cv_image.height/2.01, 180, 0, 360, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
 		else
 			mask:line(radius, 0, self.cv_image.width - radius, 0, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, 0, 'CV_AA')
 			mask:line(self.cv_image.width, radius, self.cv_image.width, self.cv_image.height - radius, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, 0, 'CV_AA')
@@ -1539,30 +1539,38 @@ function _M.round_corner(self, radius, bg_color)
 	end
 end
 
-function _M.background_color(self, bg_color)
-
-	if not self.cv_image then
-		return error("Failed to set background color to the image")
-	else
-	
-		local background_color
-		if not bg_color then
-			background_color = cv_scalar(255, 255, 255, 255)
-		else
-			background_color = cv_scalar(bg_color[1], bg_color[2], bg_color[3], bg_color[4])
-			print(background_color.val[0],background_color.val[1],background_color.val[2],background_color.val[3])
-		end
-	
-		local dst = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
-		local mask = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
-		mask:rectangle(0, 0, self.cv_image.width, self.cv_image.height, {255, 255, 255, 255}, -1, 'CV_AA')
-		
-		cv_set(dst.cv_image, background_color)
-		cv_copy(self.cv_image, dst.cv_image, mask.cv_image)
-		return dst
-	end
-
-end
+--function _M.background_color(self, bg_color)
+--
+--	if not self.cv_image then
+--		return error("Failed to set background color to the image")
+--	else
+--	
+--		local background_color
+--		if not bg_color then
+--			background_color = cv_scalar(255, 255, 255, 0)
+--		else
+--			background_color = cv_scalar(bg_color[1], bg_color[2], bg_color[3], bg_color[4])
+--			print(background_color.val[0],background_color.val[1],background_color.val[2],background_color.val[3])
+--		end
+--	
+--		local dst = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
+--		
+--		for i = 0, self.cv_image.height, 1 do
+--			for j = 0, self.cv_image.width, 1 do
+--			
+--				*b=data[i*step+j*chanels+0];
+--		           *g=data[i*step+j*chanels+1];
+--		           *r=data[i*step+j*chanels+2];
+--			end
+--		end
+--		
+--		cv_set(dst.cv_image, background_color)
+--		cv_add_weighted(dst.cv_image, 0.5, self.cv_image, 1, 0.0, dst.cv_image)
+----		cv_copy(self.cv_image, dst.cv_image, mask.cv_image)
+--		return dst
+--	end
+--
+--end
 
 --未完成版
 --function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)

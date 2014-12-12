@@ -2,7 +2,7 @@ local luacv = require "luacv"
 
 --test load image
 --[
-local image = luacv.load_image("files/alpha.png", "UNCHANGED")
+local image = luacv.load_image("files/test_0x1.jpg", "UNCHANGED")
 
 --[[
 local faces = image:object_detect("haarcascade_frontalface_alt2.xml")
@@ -31,7 +31,7 @@ image:save_image("files/test_3_rectangle.png")
 
 --test draw ellipse
 --[[
-image:ellipse(100, 200, 90, 90, 360, 0, 360, {255,0,255,0}, -1, 'CV_AA')
+image:ellipse(image.cv_image.width/2, image.cv_image.height/2, image.cv_image.width/2, image.cv_image.height/2, 360, 0, 360, {255,0,255,0}, -1, 'CV_AA')
 image:save_image("files/test_3_ellipse.png")
 --]]
 
@@ -64,15 +64,15 @@ print(img:get_size())
 img:save_image("files/test_pad.jpg")
 --]]
 
---[[
-local img = image:round_corner(0)
+--[
+local img = image:round_corner(-100, {0,255,0,255})
 print(img:get_size())
 img:save_image("files/test_round_corner.png")
 --]]
 
---[
+--[[
 local img = image:round_corner(-1)
-local aa = img:background_color({255,0,0,255})
+local aa = img:background_color({0,255,0,255})
 aa:save_image("files/test_round_corner.png")
 --]]
 
