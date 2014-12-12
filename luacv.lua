@@ -1495,9 +1495,9 @@ function _M.round_corner(self, radius, bg_color)
 	
 		local background_color
 		if not bg_color then
-			background_color = cv_scalar(255, 255, 255, 255)
+			background_color = cv_scalar(255, 255, 255, 0)
 		else
-			background_color = cv_scalar(bg_color[0], bg_color[1], bg_color[2], bg_color[3])
+			background_color = cv_scalar(bg_color[1], bg_color[2], bg_color[3], bg_color[4])
 		end
 
 		radius = radius or 0
@@ -1534,19 +1534,35 @@ function _M.round_corner(self, radius, bg_color)
 		local dst = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
 		cv_set(dst.cv_image, background_color)
 		cv_copy(self.cv_image, dst.cv_image, mask.cv_image)
+		mask:release_image()
 		return dst
 	end
 end
 
---function _M.background_color(self, bg_color)
---
---	if not self.cv_image then
---		return error("Failed to set background color to the image")
---	else
---		
---	end
---
---end
+function _M.background_color(self, bg_color)
+
+	if not self.cv_image then
+		return error("Failed to set background color to the image")
+	else
+	
+		local background_color
+		if not bg_color then
+			background_color = cv_scalar(255, 255, 255, 255)
+		else
+			background_color = cv_scalar(bg_color[1], bg_color[2], bg_color[3], bg_color[4])
+			print(background_color.val[0],background_color.val[1],background_color.val[2],background_color.val[3])
+		end
+	
+		local dst = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
+		local mask = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
+		mask:rectangle(0, 0, self.cv_image.width, self.cv_image.height, {255, 255, 255, 255}, -1, 'CV_AA')
+		
+		cv_set(dst.cv_image, background_color)
+		cv_copy(self.cv_image, dst.cv_image, mask.cv_image)
+		return dst
+	end
+
+end
 
 --未完成版
 --function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)

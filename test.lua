@@ -64,10 +64,16 @@ print(img:get_size())
 img:save_image("files/test_pad.jpg")
 --]]
 
---[
+--[[
 local img = image:round_corner(0)
 print(img:get_size())
 img:save_image("files/test_round_corner.png")
+--]]
+
+--[
+local img = image:round_corner(-1)
+local aa = img:background_color({255,0,0,255})
+aa:save_image("files/test_round_corner.png")
 --]]
 
 --[[
