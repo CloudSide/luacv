@@ -868,7 +868,7 @@ function _M.create_image(w, h, depth, channels)
 end
 
 function _M.get_image_data(self)
-	return self.cv_image.imageData
+	return self.cv_image[0].imageData
 end
 
 function _M.clone_image(self)
