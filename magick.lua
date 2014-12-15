@@ -23,7 +23,7 @@ ffi.cdef([[
   } StorageType;
 
   void MagickWandGenesis();
-  void MagickSetFirstIterator(MagickWand*);
+  void MagickSetFirstIterator(MagickWand *wand);
   MagickWand* NewMagickWand();
   MagickWand* DestroyMagickWand(MagickWand*);
   MagickBooleanType MagickReadImage(MagickWand*, const char*);
@@ -31,6 +31,10 @@ ffi.cdef([[
   MagickBooleanType MagickConstituteImage(MagickWand *wand, 
 	const size_t columns, const size_t rows, const char *map,
     const StorageType storage, void *pixels);
+  MagickBooleanType MagickExportImagePixels(MagickWand *wand,
+    const ssize_t x, const ssize_t y, const size_t columns,
+    const size_t rows, const char *map, const StorageType storage,
+    void *pixels);
 
   const char* MagickGetException(const MagickWand*, ExceptionType*);
 
@@ -508,7 +512,13 @@ do
     end,
     __tostring = function(self)
       return "Image<" .. tostring(self.path) .. ", " .. tostring(self.wand) .. ">"
-    end
+    end,
+	export_image_pixels = function(self, x, y, w, h, map, storage, pixels)
+		if 0 == lib.MagickExportImagePixels(self.wand, x, y, w, h, map, storage_type_op[storage], pixels) then
+			return true
+		end
+		return false
+	end
   }
   _base_0.__index = _base_0
   local _class_0 = setmetatable({
