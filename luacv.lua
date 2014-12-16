@@ -529,6 +529,26 @@ ffi.cdef[[
 								
 	/* Sets all or "masked" elements of input array to the same value */
 	void cvSet(CvArr* arr, CvScalar value, const CvArr* mask);
+	
+	/* dst(idx) = src1(idx) & src2(idx) */
+	void cvAnd( const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask);
+	
+	/* dst(idx) = ~src(idx) */
+	void cvNot( const CvArr* src, CvArr* dst );
+	
+	/* dst(idx) = src1(idx) | src2(idx) */
+	void cvOr( const CvArr* src1, const CvArr* src2, CvArr* dst, const CvArr* mask);
+	
+	/* Splits a multi-channel array into the set of single-channel arrays or
+	   extracts particular [color] plane */
+	void  cvSplit( const CvArr* src, CvArr* dst0, CvArr* dst1, CvArr* dst2, CvArr* dst3 );
+	
+	/* Merges a set of single-channel arrays into the single multi-channel array
+	   or inserts one particular [color] plane to the array */
+	void  cvMerge( const CvArr* src0, const CvArr* src1, const CvArr* src2, const CvArr* src3, CvArr* dst );
+	
+	/* dst(idx) = src(idx) & value */
+	void cvAndS( const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask);
 ]]
  
 local _M = {
@@ -757,6 +777,34 @@ end
 local function cv_create_mem_storage(block_size)
 	block_size = block_size or 0
 	return cvCore.cvCreateMemStorage(block_size)
+end
+
+local function cv_and(src1, src2, dst, mask)
+	return cvCore.cvAnd(src1, src2, dst, mask)
+end
+
+local function cv_and(src1, src2, dst, mask)
+	return cvCore.cvAnd(src1, src2, dst, mask)
+end
+	
+local function cv_and_s(src, value, dst, mask)
+	return cvCore.cvAndS(src, value, dst, mask)
+end	
+
+local function cv_or(src1, src2, dst, mask)
+	return cvCore.cvOr(src1, src2, dst, mask)
+end
+
+local function cv_not(src, dst)
+	return cvCore.cvNot(src, dst)
+end
+
+local function cv_split(src, dst0, dst1, dst2, dst3)
+	return cvCore.cvSplit(src, dst0, dst1, dst2, dst3)
+end
+
+local function cv_merge(src0, src1, src2, src3, dst)
+	return cvCore.cvMerge(src0, src1, src2, src3, dst)
 end
 
 --[[
@@ -1510,32 +1558,40 @@ function _M.round_corner(self, radius, bg_color)
 			radius = radius > self.cv_image.width / 2 and  self.cv_image.width / 2 or radius
 		end
 		
-		local mask = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
-
+		local scale_rate = 5
+		local roi_x = self.cv_image.width*(scale_rate-1)/2-1
+		local roi_y = self.cv_image.height*(scale_rate-1)/2
+		
+		local mask = _M:CV(cv_create_image(self.cv_image.width*scale_rate, self.cv_image.height*scale_rate, self.cv_image.depth, self.cv_image.nChannels))
+		
 		if (radius == 0) then
 			mask:rectangle(0, 0, self.cv_image.width, self.cv_image.height, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
 		elseif (radius < 0) then
-			mask:ellipse(self.cv_image.width/2, self.cv_image.height/2, self.cv_image.width/2.01, self.cv_image.height/2.01, 180, 0, 360, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:ellipse(self.cv_image.width*scale_rate/2-2, self.cv_image.height*scale_rate/2, self.cv_image.width/2-1, self.cv_image.height/2, 0, 0, 360, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
 		else
-			mask:line(radius, 0, self.cv_image.width - radius, 0, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, 0, 'CV_AA')
-			mask:line(self.cv_image.width, radius, self.cv_image.width, self.cv_image.height - radius, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, 0, 'CV_AA')
-			mask:line(radius, self.cv_image.height, self.cv_image.width - radius, self.cv_image.height, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, 0, 'CV_AA')
-			mask:line(0, radius, self.cv_image.width, self.cv_image.height - radius, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, 0, 'CV_AA')
-			
-			mask:rectangle(radius, 0, self.cv_image.width - radius, self.cv_image.height, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
-			mask:rectangle(0, radius, self.cv_image.width, self.cv_image.height - radius, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:rectangle(roi_x + radius, roi_y, roi_x + self.cv_image.width - radius, roi_y + self.cv_image.height, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:rectangle(roi_x, roi_y + radius, roi_x + self.cv_image.width, roi_y + self.cv_image.height - radius, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
 				
-			mask:ellipse(radius+2, radius+2, radius, radius, 360, 180, 270, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
-			mask:ellipse(self.cv_image.width - radius+1, radius+2, radius, radius, 360, 270, 360, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
-			mask:ellipse(self.cv_image.width - radius+1, self.cv_image.height - radius+1, radius, radius, 360, 0, 90, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
-			mask:ellipse(radius+2, self.cv_image.height - radius+1, radius, radius, 360, 180, 90, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:ellipse(roi_x + radius-1, roi_y + radius-1, radius-1, radius-1, 0, 180, 270, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:ellipse(roi_x + self.cv_image.width - radius-1, roi_y + radius, radius, radius, 0, 270, 360, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:ellipse(roi_x + self.cv_image.width - radius, roi_y + self.cv_image.height - radius, radius-1, radius-1, 0, 0, 90, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:ellipse(roi_x + radius-1, roi_y + self.cv_image.height - radius, radius-1, radius-1, 0, 180, 90, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
 		end
-			
-		local dst = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
-		cv_set(dst.cv_image, background_color)
-		cv_copy(self.cv_image, dst.cv_image, mask.cv_image)
+		
+		mask:set_image_roi(roi_x, roi_y, self.cv_image.width, self.cv_image.height)
+		local dst2 = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
+		cv_and(self.cv_image, mask.cv_image, dst2.cv_image, nil)
+
+		cv_not(mask.cv_image, mask.cv_image)
+		
+		local dst1 = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
+		cv_set(dst1.cv_image, background_color)
+		cv_and(dst1.cv_image, mask.cv_image, dst1.cv_image, nil)
+		cv_or(dst1.cv_image, dst2.cv_image, dst1.cv_image, nil)
+		
 		mask:release_image()
-		return dst
+		dst2:release_image()
+		return dst1
 	end
 end
 

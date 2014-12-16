@@ -2,7 +2,7 @@ local luacv = require "luacv"
 
 --test load image
 --[
-local image = luacv.load_image("files/test_0x1.jpg", "UNCHANGED")
+local image = luacv.load_image("files/test_0x1.jpg", "UNCHANGED") --test_0x1.jpg
 
 --[[
 local faces = image:object_detect("haarcascade_frontalface_alt2.xml")
@@ -65,9 +65,8 @@ img:save_image("files/test_pad.jpg")
 --]]
 
 --[
-local img = image:round_corner(-100, {0,255,0,255})
-print(img:get_size())
-img:save_image("files/test_round_corner.png")
+local img = image:round_corner(-100, {0,0,0,255})
+img:save_image("files/test_round_corner.jpg")
 --]]
 
 --[[
