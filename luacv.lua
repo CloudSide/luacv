@@ -1250,7 +1250,7 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 			return error("GRAVITY_XY_CENTER only can be used for corp")
 		end
 		
-		local dst
+		--local dst
 		local h_roi
 		local w_roi
 		local x_roi
@@ -1289,8 +1289,8 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 		
 		
 		self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
-		dst = self:resize(n_w, n_h, '', 'INTER_AREA')
-		return dst
+		self:resize(n_w, n_h, '', 'INTER_AREA')
+		--return dst
 	end
 end
 
