@@ -917,6 +917,7 @@ end
 
 function _M.get_image_data(self)
 	return self.cv_image.imageData
+	--return self.cv_image.imageDataOrigin
 end
 
 function _M.clone_image(self)
@@ -1158,7 +1159,8 @@ function _M.resize(self, w, h, mode, interpolation)
 		local dst
 		
 		if n_w == o_w and n_h == o_h then
-			dst = cv_clone_image(self.cv_image)
+			return
+			--dst = cv_clone_image(self.cv_image)
 		else
 			if mode == 'RESIZE_SCALE' then
 				
@@ -1194,9 +1196,11 @@ function _M.resize(self, w, h, mode, interpolation)
 		
 			dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
 			cv_resize(self.cv_image, dst, interpolation)
+			cv_release_image(self.cv_image)
+			self.cv_image = dst
 		end	
-		
-		return _M:CV(dst)
+		return
+		--return _M:CV(dst)
 	end
 	
 end
