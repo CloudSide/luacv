@@ -1,4 +1,5 @@
 local ffi = require("ffi")
+local magick = require("magick")
 local cvCore, cvHighgui, cvImgproc, cvObjdetect = 
 	ffi.load("opencv_core"), 
 	ffi.load("opencv_highgui"), 
@@ -561,6 +562,17 @@ function _M.CV(self, cv_image)
 	return setmetatable({ cv_image = cv_image }, mt)
 end
 
+local image_depth = {
+	["IPL_DEPTH_8U"] = 8,
+	["IPL_DEPTH_8S"] = 0x80000008,
+	["IPL_DEPTH_16S"] = 0x80000010,
+	["IPL_DEPTH_32S"] = 0x80000020,
+	["IPL_DEPTH_32F"] = 32,
+	["IPL_DEPTH_64F"] = 64,
+	["UndefinedPixel"] = 0,
+}
+
+
 local iscolor_op = {
 	['UNCHANGED'] = -1, --[[8bit, color or not]]
 	['GRAYSCALE'] = 0,	--[[8bit, gray ]]
@@ -569,9 +581,16 @@ local iscolor_op = {
 	['ANYCOLOR'] = 4,	--[[?, any color]]
 }
 
+--[[
+For JPEG, it can be a quality ( CV_IMWRITE_JPEG_QUALITY ) from 0 to 100 (the higher is the better). Default value is 95.
+For WEBP, it can be a quality ( CV_IMWRITE_WEBP_QUALITY ) from 1 to 100 (the higher is the better). By default (without any parameter) and for quality above 100 the lossless compression is used.
+For PNG, it can be the compression level ( CV_IMWRITE_PNG_COMPRESSION ) from 0 to 9. A higher value means a smaller size and longer compression time. Default value is 3.
+For PPM, PGM, or PBM, it can be a binary format flag ( CV_IMWRITE_PXM_BINARY ), 0 or 1. Default value is 1.
+]]
 local save_op = {
-	['JPEG_QUALITY'] = 1,
-	['PNG_COMPRESSION'] = 16,
+	['JPEG_QUALITY'] = 1, 		-- 0, 100
+	['PNG_COMPRESSION'] = 16,		-- 0, 9
+	['WEBP_QUALITY'] = 64,		-- 1, 100
 }
 
 local line_type_op = {
@@ -1704,6 +1723,35 @@ end
 --		return self
 --	end
 --end
+
+function _M.to_magick(self)
+
+	local storageType
+	if self.cv_image.depth == image_depth["IPL_DEPTH_8U"] then
+		storageType = "CharPixel"
+	elseif self.cv_image.depth == image_depth["IPL_DEPTH_8S"] then
+		storageType = "ShortPixel"
+	elseif self.cv_image.depth == image_depth["IPL_DEPTH_16S"] then
+		storageType = "IntegerPixel"
+	elseif self.cv_image.depth == image_depth["IPL_DEPTH_32S"] then
+		storageType = "LongPixel"
+	elseif self.cv_image.depth == image_depth["IPL_DEPTH_32F"] then
+		storageType = "FloatPixel"
+	elseif self.cv_image.depth == image_depth["IPL_DEPTH_64F"] then
+		storageType = "DoublePixel"
+	else
+		storageType = "UndefinedPixel"
+	end
+	
+	local map = string.format("%c%c%c%c", self.cv_image.colorModel[2], self.cv_image.colorModel[1], self.cv_image.colorModel[0], self.cv_image.colorModel[3])
+	
+	local dst = cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels)
+	cv_copy(self.cv_image, dst)
+	local mgk = magick.constitute_image(dst.width, dst.height, map, storageType, dst.imageData)
+	cv_release_image(dst)
+								
+	return mgk
+end
 
 return _M
 
