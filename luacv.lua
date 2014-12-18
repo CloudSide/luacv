@@ -1376,16 +1376,16 @@ function _M.thumb(self, w, h, gravity_mode)
 				n_h = n_w
 				
 				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
-				dst = self:resize(n_w, n_h, '', 'INTER_AREA')
-				return dst
+				--dst = self:resize(n_w, n_h, '', 'INTER_AREA')
+				return self:resize(n_w, n_h, '', 'INTER_AREA')
 			else
 				h_roi = n_h
 				w_roi = n_w
 				x_roi = (x_roi - w_roi / 2) > 0 and (x_roi - w_roi / 2) or 0
 				y_roi = (y_roi - h_roi / 2) > 0 and (y_roi - h_roi / 2) or 0
 				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
-				dst = cv_clone_image(self.cv_image)
-				return _M:CV(dst)
+				--dst = cv_clone_image(self.cv_image)
+				--return _M:CV(dst)
 			end
 		end
 	end
