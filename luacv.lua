@@ -1068,9 +1068,24 @@ function _M.ellipse(self, x, y, w, h, angle, start_angle, end_angle, scalar, thi
 	end
 end
 
+local FaceCascade
+local FaceStorageCascade = cv_create_mem_storage(0)
+
 function _M.object_detect(self, casc, find_biggest_object)
-	local storage_cascade = cv_create_mem_storage(0)
-	local cascade = cv_load(casc, storage_cascade)
+
+	local storage_cascade
+	local cascade
+
+	if casc == 'haarcascade_frontalface_default.xml' or casc == 'haarcascade_frontalface_alt2.xml' or 'haarcascade_frontalface_alt.xml' then
+		if not FaceCascade then
+			FaceCascade = cv_load('src/lib/data/haarcascades/haarcascade_frontalface_alt2.xml', FaceStorageCascade)
+		end
+		cascade = FaceCascade
+	else
+		storage_cascade = cv_create_mem_storage(0)
+		cascade = cv_load(casc, storage_cascade)
+	end
+
 	if not cascade then
 		return error("Failed to load casc")
 	end
@@ -1106,7 +1121,10 @@ function _M.object_detect(self, casc, find_biggest_object)
 			table.insert(rects, rect)
 		end
 	end
-	cv_release_mem_storage(storage_cascade)
+
+	if storage_cascade then
+		cv_release_mem_storage(storage_cascade)
+	end
 	cv_release_mem_storage(storage)
 	cv_release_image(gray)
 	local group_rect
@@ -1358,16 +1376,16 @@ function _M.thumb(self, w, h, gravity_mode)
 				n_h = n_w
 				
 				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
-				--dst = self:resize(n_w, n_h, '', 'INTER_AREA')
-				return self:resize(n_w, n_h, '', 'INTER_AREA')
+				dst = self:resize(n_w, n_h, '', 'INTER_AREA')
+				return dst
 			else
 				h_roi = n_h
 				w_roi = n_w
 				x_roi = (x_roi - w_roi / 2) > 0 and (x_roi - w_roi / 2) or 0
 				y_roi = (y_roi - h_roi / 2) > 0 and (y_roi - h_roi / 2) or 0
 				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
-				--dst = cv_clone_image(self.cv_image)
-				--return _M:CV(dst)
+				dst = cv_clone_image(self.cv_image)
+				return _M:CV(dst)
 			end
 		end
 	end
