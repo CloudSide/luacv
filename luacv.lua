@@ -550,6 +550,10 @@ ffi.cdef[[
 	
 	/* dst(idx) = src(idx) & value */
 	void cvAndS( const CvArr* src, CvScalar value, CvArr* dst, const CvArr* mask);
+	
+	/* Retrieves image ROI */
+	CvRect cvGetImageROI( const IplImage* image );
+
 ]]
  
 local _M = {
@@ -918,7 +922,19 @@ local function cv_set(arr, value, mask)
 	return cvCore.cvSet(arr, value, mask)
 end
 
+local function cv_get_image_roi(image)
+	return cvCore.cvGetImageROI(image)
+end
+
 --[[ +++++++++++++++++++++++++++++++++++++++++++++++ ]]
+
+_M.ERROR_MESSAGE = {
+	
+	['ErrorSave'] = 'Failed to save image',
+	['ErrorFile'] = 'File does not exist',
+	['ErrorInternal'] = 'Error in the internal service',
+	['ErrorGravity'] = 'Operation does not support the gravity_mode'
+}
 
 function _M.load_image(filename, iscolor)
 	if not iscolor then
@@ -955,7 +971,7 @@ function _M.save_image(self, filename, opt)
 	if 1 == cvHighgui.cvSaveImage(filename, self.cv_image, opt_val) then
 		return true
 	else
-		return error("Failed to save image to " .. filename)
+		return error("ErrorSave", 2)
 	end
 end
 
@@ -968,14 +984,18 @@ function _M.get_size(self)
 end
 
 function _M.set_image_roi(self, x, y, w, h)
-	local rect = cv_rect(x, y, w, h)
-	return cvHighgui.cvSetImageROI(self.cv_image, rect)
+	if not self.cv_image then
+		return error("ErrorFile", 2)
+	else
+		local rect = cv_rect(x, y, w, h)
+		return cvHighgui.cvSetImageROI(self.cv_image, rect)
+	end
 end
 
 function _M.line(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
 
 	if not self.cv_image then
-		return error("Failed to draw line on image")
+		return error("ErrorFile", 2)
 	else
 		local point1 = cv_point(x1, y1)
 		local point2 = cv_point(x2, y2)
@@ -1012,7 +1032,7 @@ end
 function _M.rectangle(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
 
 	if not self.cv_image then
-		return error("Failed to draw rectangle on image")
+		return error("ErrorFile", 2)
 	else
 		local point1 = cv_point(x1, y1)
 		local point2 = cv_point(x2, y2)
@@ -1045,7 +1065,7 @@ end
 function _M.ellipse(self, x, y, w, h, angle, start_angle, end_angle, scalar, thickness, line_type, shift)
 
 	if not self.cv_image then
-		return error("Failed to draw ellipse on image")
+		return error("ErrorFile", 2)
 	else
 		local point = cv_point(x, y)
 		local size = cv_size(w, h)
@@ -1106,7 +1126,7 @@ function _M.object_detect(self, casc, find_biggest_object)
 	end
 
 	if not cascade then
-		return error("Failed to load casc")
+		return error("ErrorInternal", 2)
 	end
 	local gray = cv_create_image(self.cv_image.width, self.cv_image.height, 8, 1)
 	cv_cvt_color(self.cv_image, gray, ffi.C.CV_BGR2GRAY)
@@ -1159,10 +1179,11 @@ end
 function _M.resize(self, w, h, mode, interpolation)
 	
 	if not self.cv_image then
-		return error("Failed to scale image")
+		return error("ErrorFile", 2)
 	else
-		local o_w = self.cv_image.width
-		local o_h = self.cv_image.height
+		local roi_rect = cv_get_image_roi(self.cv_image)
+		local o_w = roi_rect.width
+		local o_h = roi_rect.height
 		
 		w = w or 0
 		h = h or 0
@@ -1193,11 +1214,8 @@ function _M.resize(self, w, h, mode, interpolation)
 		end
 				
 		
-		local dst
-		
 		if n_w == o_w and n_h == o_h then
 			return
-			--dst = cv_clone_image(self.cv_image)
 		else
 			if mode == 'RESIZE_SCALE' then
 				
@@ -1231,25 +1249,24 @@ function _M.resize(self, w, h, mode, interpolation)
 				
 			end
 		
-			dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
+			local dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
 			cv_resize(self.cv_image, dst, interpolation)
 			cv_release_image(self.cv_image)
 			self.cv_image = dst
 		end	
-		return
-		--return _M:CV(dst)
 	end
-	
+	return
 end
 
 
 function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 
 	if not self.cv_image then
-		return error("Failed to fill image")
+		return error("ErrorFile", 2)
 	else
-		local o_w = self.cv_image.width
-		local o_h = self.cv_image.height
+		local roi_rect = cv_get_image_roi(self.cv_image)
+		local o_w = roi_rect.width
+		local o_h = roi_rect.height
 		
 		w = w or 0
 		h = h or 0
@@ -1284,19 +1301,21 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 		end
 		
 		if gravity_mode == 'GRAVITY_XY_CENTER' then
-			return error("GRAVITY_XY_CENTER only can be used for corp")
+			return error("ErrorGravity")
 		end
 		
-		--local dst
+
 		local h_roi
 		local w_roi
 		local x_roi
-		local y_roi
-		
+		local y_roi		
 		
 		
 		if fill_mode == 'FILL_THUMB' then
-			return self:thumb(w, h, gravity_mode)
+			if (gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER') then
+				return self:thumb(w, h, gravity_mode)
+			end
+			fill_mode = 'FILL_DEFAULT'
 		end
 		
 		
@@ -1327,17 +1346,18 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 		
 		self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
 		self:resize(n_w, n_h, '', 'INTER_AREA')
-		--return dst
 	end
+	return
 end
 
 function _M.thumb(self, w, h, gravity_mode)
 
 	if not self.cv_image then
-		return error("Failed to get thumb")
+		return error("ErrorFile")
 	else
-		local o_w = self.cv_image.width
-		local o_h = self.cv_image.height
+		local roi_rect = cv_get_image_roi(self.cv_image)
+		local o_w = roi_rect.width
+		local o_h = roi_rect.height
 		
 		w = w or 0
 		h = h or 0
@@ -1368,14 +1388,13 @@ function _M.thumb(self, w, h, gravity_mode)
 		end
 		
 		if not (gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER') then
-			return error("thumbnail using face detection in combination with the 'face' or 'faces' gravity")
+			return error("ErrorGravity")
 		end
 		
 		
 		if (n_w > o_w or n_h > o_h) then
 			return self:fill(n_w, n_h, '', gravity_mode)
 		else
-			local dst
 			local h_roi
 			local w_roi
 			local x_roi
@@ -1395,34 +1414,45 @@ function _M.thumb(self, w, h, gravity_mode)
 				n_h = n_w
 				
 				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
-				--dst = self:resize(n_w, n_h, '', 'INTER_AREA')
-				return self:resize(n_w, n_h, '', 'INTER_AREA')
+				self:resize(n_w, n_h, '', 'INTER_AREA')
 			else
 				h_roi = n_h
 				w_roi = n_w
 				x_roi = (x_roi - w_roi / 2) > 0 and (x_roi - w_roi / 2) or 0
 				y_roi = (y_roi - h_roi / 2) > 0 and (y_roi - h_roi / 2) or 0
 				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
-				--dst = cv_clone_image(self.cv_image)
-				--return _M:CV(dst)
+				local dst = cv_create_image(w_roi, h_roi, self.cv_image.depth, self.cv_image.nChannels)
+				cv_copy(self.cv_image, dst)
+				cv_release_image(self.cv_image)
+				self.cv_image = dst
 			end
 		end
 	end
+	return
 end
 
 
-function _M.crop(self, x, y, w, h)
+function _M.crop(self, x, y, w, h, gravity_mode)
 
 	if not self.cv_image then
-		return error("Failed to crop the image")
+		return error("ErrorFile")
 	else
-		local o_w = self.cv_image.width
-		local o_h = self.cv_image.height
+		local roi_rect = cv_get_image_roi(self.cv_image)
+		local o_w = roi_rect.width
+		local o_h = roi_rect.height
 		
 		x = x or 0
 		y = y or 0
 		w = w or 0
 		h = h or 0
+		
+--		if not gravity_mode then
+--			gravity_mode = ''
+--		end
+--		
+--		if not (gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER') then
+--			return error("ErrorGravity")
+--		end
 		
 		local n_w
 		local n_h
@@ -1452,19 +1482,23 @@ function _M.crop(self, x, y, w, h)
 		end
 		
 		self:set_image_roi(x, y, n_w, n_h)
-		dst = cv_clone_image(self.cv_image)
-		return _M:CV(dst)
-		
+		local dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
+		cv_copy(self.cv_image, dst)
+		cv_release_image(self.cv_image)
+		self.cv_image = dst
 	end
+	
+	return
 end
 
 function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 
 	if not self.cv_image then
-		return error("Failed to pad the image")
+		return error("ErrorFile")
 	else
-		local o_w = self.cv_image.width
-		local o_h = self.cv_image.height
+		local roi_rect = cv_get_image_roi(self.cv_image)
+		local o_w = roi_rect.width
+		local o_h = roi_rect.height
 
 		w = w or 0
 		h = h or 0
@@ -1494,7 +1528,7 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 		end
 		
 		if (gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER' or gravity_mode == 'GRAVITY_XY_CENTER') then
-			return error("FACE or XY_CENTER gravity can only be used with crop, fill, lfill or thumb")
+			return error("ErrorGravity")
 		end
 		
 		if not pad_mode then
@@ -1509,13 +1543,8 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 		end
 		
 		
-		local src
-		local dst
-		local x
-		local y
 		local resize_h
 		local resize_w 
-
 		
 		if pad_mode == 'PAD_DEFAULT' then
 			
@@ -1545,10 +1574,15 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 		end
 		
 
-		dst = _M:CV(cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels))
+		
+		local x
+		local y
+		
+		local dst = _M:CV(cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels))
 		cv_set(dst.cv_image, color)
 		x, y = cv_center_of_gravity(dst, gravity_mode)
-		src = self:resize(resize_w, resize_h, '', 'INTER_AREA')
+		
+		self:resize(resize_w, resize_h, '', 'INTER_AREA')
 
 		if x > n_w/2 then
 			x = n_w - resize_w
@@ -1567,19 +1601,22 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 		end
 		
 		dst:set_image_roi(x, y, resize_w, resize_h)
-		cv_add_weighted(dst.cv_image, 0, src.cv_image, 1, 0.0, dst.cv_image)
+		cv_add_weighted(dst.cv_image, 0, self.cv_image, 1, 0.0, dst.cv_image)
 		cv_reset_image_roi(dst.cv_image)
 		
-		src:release_image()
-		return dst
-		
+		local dst_copy = cv_create_image(dst.cv_image.width, dst.cv_image.height, self.cv_image.depth, self.cv_image.nChannels)
+		cv_copy(dst.cv_image, dst_copy)
+		cv_release_image(self.cv_image)
+		self.cv_image = dst_copy
+		dst:release_image()
 	end
+	return
 end
 
 function _M.round_corner(self, radius, bg_color)
 
 	if not self.cv_image then
-		return error("Failed to round corner the image")
+		return error("ErrorFile")
 	else
 	
 		local background_color
@@ -1620,20 +1657,22 @@ function _M.round_corner(self, radius, bg_color)
 		end
 		
 		mask:set_image_roi(roi_x, roi_y, self.cv_image.width, self.cv_image.height)
-		local dst2 = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
-		cv_and(self.cv_image, mask.cv_image, dst2.cv_image, nil)
+		local dst2 = cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels)
+		cv_and(self.cv_image, mask.cv_image, dst2, nil)
 
 		cv_not(mask.cv_image, mask.cv_image)
 		
-		local dst1 = _M:CV(cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels))
-		cv_set(dst1.cv_image, background_color)
-		cv_and(dst1.cv_image, mask.cv_image, dst1.cv_image, nil)
-		cv_or(dst1.cv_image, dst2.cv_image, dst1.cv_image, nil)
+		local dst1 = cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels)
+		cv_set(dst1, background_color)
+		cv_and(dst1, mask.cv_image, dst1, nil)
+		cv_or(dst1, dst2, dst1, nil)
 		
 		mask:release_image()
-		dst2:release_image()
-		return dst1
+		cv_release_image(dst2)
+		cv_release_image(self.cv_image)
+		self.cv_image = dst1
 	end
+	return
 end
 
 --function _M.background_color(self, bg_color)

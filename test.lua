@@ -36,37 +36,33 @@ image:save_image("files/test_3_ellipse.png")
 --]]
 
 --[[
-local img = image:resize(100, 50, 'RESIZE_LIMIT')
-img:save_image("files/test_resize.jpg")
+image:resize(100, 50)
+image:save_image("files/test_resize.jpg")
 --]]
 
 --[[
-local img = image:fill(200, 200, 'FILL_DEFULT', 'GRAVITY_SOUTH_WEST')
-print(img:get_size())
-img:save_image("files/test_fill.jpg")
+image:fill(147, 98, 'FILL_THUMB', 'GRAVITY_FACE')
+image:save_image("files/test_fill.jpg")
 --]]
 
 --[[
-local img = image:thumb(250, 250, 'GRAVITY_FACE')
-print(img:get_size())
-img:save_image("files/test_thumb.jpg")
---]]
-
---[[
-local img = image:crop(109000,100,250, 250)
-print(img:get_size())
-img:save_image("files/test_crop.jpg")
---]]
-
---[[
-local img = image:pad(80, 800, 'PAD_LIMIT', nil, {255,0,255,1})
-print(img:get_size())
-img:save_image("files/test_pad.jpg")
+image:thumb(147, 98, 'GRAVITY_WEST')
+image:save_image("files/test_thumb.jpg")
 --]]
 
 --[
-local img = image:round_corner(-100, {0,0,0,255})
-img:save_image("files/test_round_corner.jpg")
+image:crop(0,0,250,250)
+--image:save_image("files/test_crop.jpg")
+--]]
+
+--[
+image:pad(80, 800, 'PAD_LIMIT', nil, {255,0,255,1})
+--image:save_image("files/test_pad.jpg")
+--]]
+
+--[
+image:round_corner(-100, {0,0,0,255})
+image:save_image("files/test_round_corner.jpg")
 --]]
 
 --[[
