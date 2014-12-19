@@ -50,14 +50,14 @@ image:thumb(147, 98, 'GRAVITY_WEST')
 image:save_image("files/test_thumb.jpg")
 --]]
 
---[
+--[[
 image:crop(0,0,250,250)
 --image:save_image("files/test_crop.jpg")
 --]]
 
 --[
 image:pad(80, 800, 'PAD_LIMIT', nil, {255,0,255,1})
---image:save_image("files/test_pad.jpg")
+--image:save_image("files/test_pad2.jpg")
 --]]
 
 --[

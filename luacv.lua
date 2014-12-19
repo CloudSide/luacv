@@ -856,60 +856,61 @@ local function cv_release_mem_storage(storage)
 	return cvCore.cvReleaseMemStorage(pointer);
 end
 
+
 local function cv_center_of_gravity(image, gravity_mode)
 
 	local x, y
 	local faces_rect = nil
 	
 	if gravity_mode == 'GRAVITY_CENTER' then
-		x = image.cv_image.width / 2
-		y = image.cv_image.height / 2
+		x = image.width / 2
+		y = image.height / 2
 	elseif gravity_mode == 'GRAVITY_NORTH_WEST' then
 		x = 0
 		y = 0
 	elseif gravity_mode == 'GRAVITY_NORTH' then
-		x = image.cv_image.width / 2
+		x = image.width / 2
 		y = 0
 	elseif gravity_mode == 'GRAVITY_NORTH_EAST' then
-		x = image.cv_image.width
+		x = image.width
 		y = 0
 	elseif gravity_mode == 'GRAVITY_WEST' then
 		x = 0
-		y = image.cv_image.height / 2
+		y = image.height / 2
 	elseif gravity_mode == 'GRAVITY_EAST' then
-		x = image.cv_image.width
-		y = image.cv_image.height / 2
+		x = image.width
+		y = image.height / 2
 	elseif gravity_mode == 'GRAVITY_SOUTH_WEST' then
 		x = 0
-		y = image.cv_image.height
+		y = image.height
 	elseif gravity_mode == 'GRAVITY_SOUTH' then
-		x = image.cv_image.width / 2
-		y = image.cv_image.height
+		x = image.width / 2
+		y = image.height
 	elseif gravity_mode == 'GRAVITY_SOUTH_EAST' then
-		x = image.cv_image.width
-		y = image.cv_image.height
+		x = image.width
+		y = image.height
 	elseif gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' then
 		
-		local faces, group_rect = image:object_detect('haarcascade_frontalface_alt2.xml', 1)
+		local faces, group_rect = cv_object_detect(image, 'frontalface', 1)
 		if #faces > 0 then
 			x = faces[1].x + faces[1].width / 2
 			y = faces[1].y + faces[1].height / 2
 			faces_rect = group_rect
 		else
-			x = image.cv_image.width / 2
-			y = (gravity_mode == 'GRAVITY_FACE') and 0 or image.cv_image.height / 2
+			x = image.width / 2
+			y = (gravity_mode == 'GRAVITY_FACE') and 0 or image.height / 2
 		end
 		
 	elseif gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER' then
 		
-		local faces, group_rect = image:object_detect('haarcascade_frontalface_alt2.xml')
+		local faces, group_rect = cv_object_detect(image, 'frontalface')
 		if #faces > 0 then
 			x = group_rect.x + group_rect.width / 2
 			y = group_rect.y + group_rect.height / 2
 			faces_rect = group_rect
 		else
-			x = image.cv_image.width / 2
-			y = (gravity_mode == 'GRAVITY_FACES') and 0 or image.cv_image.height / 2
+			x = image.width / 2
+			y = (gravity_mode == 'GRAVITY_FACES') and 0 or image.height / 2
 		end
 	end
 	
@@ -924,6 +925,85 @@ end
 
 local function cv_get_image_roi(image)
 	return cvCore.cvGetImageROI(image)
+end
+
+
+local FaceCascade
+local FaceStorageCascade = cv_create_mem_storage(0)
+
+local function cv_object_detect(image, casc, find_biggest_object)
+
+	local storage_cascade
+	local cascade
+
+	if casc == 'frontalface' then
+		if not FaceCascade then
+			FaceCascade = cv_load('src/lib/data/haarcascades/haarcascade_frontalface_alt2.xml', FaceStorageCascade)
+		end
+		cascade = FaceCascade
+	else
+		storage_cascade = cv_create_mem_storage(0)
+		cascade = cv_load(casc, storage_cascade)
+	end
+
+	if not cascade then
+		return error("ErrorInternal", 2)
+	end
+	local gray = cv_create_image(image.width, image.height, 8, 1)
+	cv_cvt_color(image, gray, ffi.C.CV_BGR2GRAY)
+	cv_equalize_hist(gray, gray)
+	local storage = cv_create_mem_storage(0)
+	local flags = 3
+	if find_biggest_object then
+		flags = 15
+	end
+	local faces = cv_haar_detect_objects(gray, cascade, storage, 1.06, 3, flags, cv_size(image.width / 100, image.height / 100), cv_size(0, 0))
+	local rects = {}
+	local x_min, y_min, x_max, y_max, idx_x_max, idx_y_max
+	if faces and faces.total > 0 then
+		for i=0, (faces.total - 1) do
+			local rect = cv_get_seq_elem(faces, i)
+			rect = ffi.cast("CvRect *", rect)
+			if (not x_min) or (x_min > rect.x) then
+				x_min = rect.x
+			end
+			if (not y_min) or (y_min > rect.y) then
+				y_min = rect.y
+			end
+			if (not x_max) or (x_max < rect.x) then
+				x_max = rect.x
+				idx_x_max = i + 1
+			end
+			if (not y_max) or (y_max < rect.y) then
+				y_max = rect.y
+				idx_y_max = i + 1
+			end
+			table.insert(rects, rect)
+		end
+	end
+
+	if storage_cascade then
+		cv_release_mem_storage(storage_cascade)
+	end
+	cv_release_mem_storage(storage)
+	cv_release_image(gray)
+	local group_rect
+	if #rects > 0 then
+		local g_x, g_y = x_min, y_min
+		local g_w = x_max - x_min + rects[idx_x_max].width
+		local g_h = y_max - y_min + rects[idx_y_max].height
+		group_rect = cv_rect(g_x, g_y, g_w, g_h)
+	end
+	return rects, group_rect
+end
+
+local function cv_set_image_roi(image, x, y, w, h)
+	if not image then
+		return error("ErrorFile", 2)
+	else
+		local rect = cv_rect(x, y, w, h)
+		return cvHighgui.cvSetImageROI(image, rect)
+	end
 end
 
 --[[ +++++++++++++++++++++++++++++++++++++++++++++++ ]]
@@ -984,12 +1064,7 @@ function _M.get_size(self)
 end
 
 function _M.set_image_roi(self, x, y, w, h)
-	if not self.cv_image then
-		return error("ErrorFile", 2)
-	else
-		local rect = cv_rect(x, y, w, h)
-		return cvHighgui.cvSetImageROI(self.cv_image, rect)
-	end
+	return cv_set_image_roi(self.cv_image, x, y, w, h)
 end
 
 function _M.line(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
@@ -1107,73 +1182,9 @@ function _M.ellipse(self, x, y, w, h, angle, start_angle, end_angle, scalar, thi
 	end
 end
 
-local FaceCascade
-local FaceStorageCascade = cv_create_mem_storage(0)
 
 function _M.object_detect(self, casc, find_biggest_object)
-
-	local storage_cascade
-	local cascade
-
-	if casc == 'haarcascade_frontalface_default.xml' or casc == 'haarcascade_frontalface_alt2.xml' or 'haarcascade_frontalface_alt.xml' then
-		if not FaceCascade then
-			FaceCascade = cv_load('src/lib/data/haarcascades/haarcascade_frontalface_alt2.xml', FaceStorageCascade)
-		end
-		cascade = FaceCascade
-	else
-		storage_cascade = cv_create_mem_storage(0)
-		cascade = cv_load(casc, storage_cascade)
-	end
-
-	if not cascade then
-		return error("ErrorInternal", 2)
-	end
-	local gray = cv_create_image(self.cv_image.width, self.cv_image.height, 8, 1)
-	cv_cvt_color(self.cv_image, gray, ffi.C.CV_BGR2GRAY)
-	cv_equalize_hist(gray, gray)
-	local storage = cv_create_mem_storage(0)
-	local flags = 3
-	if find_biggest_object then
-		flags = 15
-	end
-	local faces = cv_haar_detect_objects(gray, cascade, storage, 1.06, 3, flags, cv_size(self.cv_image.width / 100, self.cv_image.height / 100), cv_size(0, 0))
-	local rects = {}
-	local x_min, y_min, x_max, y_max, idx_x_max, idx_y_max
-	if faces and faces.total > 0 then
-		for i=0, (faces.total - 1) do
-			local rect = cv_get_seq_elem(faces, i)
-			rect = ffi.cast("CvRect *", rect)
-			if (not x_min) or (x_min > rect.x) then
-				x_min = rect.x
-			end
-			if (not y_min) or (y_min > rect.y) then
-				y_min = rect.y
-			end
-			if (not x_max) or (x_max < rect.x) then
-				x_max = rect.x
-				idx_x_max = i + 1
-			end
-			if (not y_max) or (y_max < rect.y) then
-				y_max = rect.y
-				idx_y_max = i + 1
-			end
-			table.insert(rects, rect)
-		end
-	end
-
-	if storage_cascade then
-		cv_release_mem_storage(storage_cascade)
-	end
-	cv_release_mem_storage(storage)
-	cv_release_image(gray)
-	local group_rect
-	if #rects > 0 then
-		local g_x, g_y = x_min, y_min
-		local g_w = x_max - x_min + rects[idx_x_max].width
-		local g_h = y_max - y_min + rects[idx_y_max].height
-		group_rect = cv_rect(g_x, g_y, g_w, g_h)
-	end
-	return rects, group_rect
+	return cv_object_detect(self.cv_image, casc, find_biggest_object)
 end
 
 function _M.resize(self, w, h, mode, interpolation)
@@ -1578,8 +1589,8 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 		local x
 		local y
 		
-		local dst = _M:CV(cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels))
-		cv_set(dst.cv_image, color)
+		local dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
+		cv_set(dst, color)
 		x, y = cv_center_of_gravity(dst, gravity_mode)
 		
 		self:resize(resize_w, resize_h, '', 'INTER_AREA')
@@ -1600,15 +1611,12 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 			y = y - resize_h/2
 		end
 		
-		dst:set_image_roi(x, y, resize_w, resize_h)
-		cv_add_weighted(dst.cv_image, 0, self.cv_image, 1, 0.0, dst.cv_image)
-		cv_reset_image_roi(dst.cv_image)
+		cv_set_image_roi(dst, x, y, resize_w, resize_h)
+		cv_add_weighted(dst, 0, self.cv_image, 1, 0.0, dst)
+		cv_reset_image_roi(dst)
 		
-		local dst_copy = cv_create_image(dst.cv_image.width, dst.cv_image.height, self.cv_image.depth, self.cv_image.nChannels)
-		cv_copy(dst.cv_image, dst_copy)
 		cv_release_image(self.cv_image)
-		self.cv_image = dst_copy
-		dst:release_image()
+		self.cv_image = dst
 	end
 	return
 end
