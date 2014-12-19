@@ -1340,7 +1340,7 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 		
 		
 		
-		x_roi, y_roi = cv_center_of_gravity(self, gravity_mode)
+		x_roi, y_roi = cv_center_of_gravity(self.cv_image, gravity_mode)
 		
 		if n_w/n_h >= o_w/o_h then
 			w_roi = o_w
@@ -1412,7 +1412,7 @@ function _M.thumb(self, w, h, gravity_mode)
 			local y_roi
 			local faces_rect
 	
-			x_roi, y_roi, faces_rect = cv_center_of_gravity(self, gravity_mode)
+			x_roi, y_roi, faces_rect = cv_center_of_gravity(self.cv_image, gravity_mode)
 			
 			if (n_w < faces_rect.width or n_h < faces_rect.height) then
 				

@@ -40,8 +40,8 @@ image:resize(100, 50)
 image:save_image("files/test_resize.jpg")
 --]]
 
---[[
-image:fill(147, 98, 'FILL_THUMB', 'GRAVITY_FACE')
+--[
+image:fill(500, 2000)
 image:save_image("files/test_fill.jpg")
 --]]
 
@@ -55,7 +55,7 @@ image:crop(0,0,250,250)
 --image:save_image("files/test_crop.jpg")
 --]]
 
---[
+--[[
 image:pad(80, 800, 'PAD_LIMIT', nil, {255,0,255,1})
 --image:save_image("files/test_pad2.jpg")
 --]]
