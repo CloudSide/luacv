@@ -856,67 +856,6 @@ local function cv_release_mem_storage(storage)
 	return cvCore.cvReleaseMemStorage(pointer);
 end
 
-
-local function cv_center_of_gravity(image, gravity_mode)
-
-	local x, y
-	local faces_rect = nil
-	
-	if gravity_mode == 'GRAVITY_CENTER' then
-		x = image.width / 2
-		y = image.height / 2
-	elseif gravity_mode == 'GRAVITY_NORTH_WEST' then
-		x = 0
-		y = 0
-	elseif gravity_mode == 'GRAVITY_NORTH' then
-		x = image.width / 2
-		y = 0
-	elseif gravity_mode == 'GRAVITY_NORTH_EAST' then
-		x = image.width
-		y = 0
-	elseif gravity_mode == 'GRAVITY_WEST' then
-		x = 0
-		y = image.height / 2
-	elseif gravity_mode == 'GRAVITY_EAST' then
-		x = image.width
-		y = image.height / 2
-	elseif gravity_mode == 'GRAVITY_SOUTH_WEST' then
-		x = 0
-		y = image.height
-	elseif gravity_mode == 'GRAVITY_SOUTH' then
-		x = image.width / 2
-		y = image.height
-	elseif gravity_mode == 'GRAVITY_SOUTH_EAST' then
-		x = image.width
-		y = image.height
-	elseif gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' then
-		
-		local faces, group_rect = cv_object_detect(image, 'frontalface', 1)
-		if #faces > 0 then
-			x = faces[1].x + faces[1].width / 2
-			y = faces[1].y + faces[1].height / 2
-			faces_rect = group_rect
-		else
-			x = image.width / 2
-			y = (gravity_mode == 'GRAVITY_FACE') and 0 or image.height / 2
-		end
-		
-	elseif gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER' then
-		
-		local faces, group_rect = cv_object_detect(image, 'frontalface')
-		if #faces > 0 then
-			x = group_rect.x + group_rect.width / 2
-			y = group_rect.y + group_rect.height / 2
-			faces_rect = group_rect
-		else
-			x = image.width / 2
-			y = (gravity_mode == 'GRAVITY_FACES') and 0 or image.height / 2
-		end
-	end
-	
-	return x, y, faces_rect;
-end
-
 --[[ Sets all or "masked" elements of input array to the same value ]]
 -- mask default nil
 local function cv_set(arr, value, mask)
@@ -995,6 +934,66 @@ local function cv_object_detect(image, casc, find_biggest_object)
 		group_rect = cv_rect(g_x, g_y, g_w, g_h)
 	end
 	return rects, group_rect
+end
+
+local function cv_center_of_gravity(image, gravity_mode)
+
+	local x, y
+	local faces_rect = nil
+	
+	if gravity_mode == 'GRAVITY_CENTER' then
+		x = image.width / 2
+		y = image.height / 2
+	elseif gravity_mode == 'GRAVITY_NORTH_WEST' then
+		x = 0
+		y = 0
+	elseif gravity_mode == 'GRAVITY_NORTH' then
+		x = image.width / 2
+		y = 0
+	elseif gravity_mode == 'GRAVITY_NORTH_EAST' then
+		x = image.width
+		y = 0
+	elseif gravity_mode == 'GRAVITY_WEST' then
+		x = 0
+		y = image.height / 2
+	elseif gravity_mode == 'GRAVITY_EAST' then
+		x = image.width
+		y = image.height / 2
+	elseif gravity_mode == 'GRAVITY_SOUTH_WEST' then
+		x = 0
+		y = image.height
+	elseif gravity_mode == 'GRAVITY_SOUTH' then
+		x = image.width / 2
+		y = image.height
+	elseif gravity_mode == 'GRAVITY_SOUTH_EAST' then
+		x = image.width
+		y = image.height
+	elseif gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' then
+		
+		local faces, group_rect = cv_object_detect(image, 'frontalface', 1)
+		if #faces > 0 then
+			x = faces[1].x + faces[1].width / 2
+			y = faces[1].y + faces[1].height / 2
+			faces_rect = group_rect
+		else
+			x = image.width / 2
+			y = (gravity_mode == 'GRAVITY_FACE') and 0 or image.height / 2
+		end
+		
+	elseif gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER' then
+		
+		local faces, group_rect = cv_object_detect(image, 'frontalface')
+		if #faces > 0 then
+			x = group_rect.x + group_rect.width / 2
+			y = group_rect.y + group_rect.height / 2
+			faces_rect = group_rect
+		else
+			x = image.width / 2
+			y = (gravity_mode == 'GRAVITY_FACES') and 0 or image.height / 2
+		end
+	end
+	
+	return x, y, faces_rect;
 end
 
 local function cv_set_image_roi(image, x, y, w, h)
@@ -1199,8 +1198,8 @@ function _M.resize(self, w, h, mode, interpolation)
 		w = w or 0
 		h = h or 0
 		
-		local n_w
-		local n_h
+		local n_w, n_h
+		
 		if w <= 0 then
 			if h <= 0 then
 				n_w = o_w
@@ -1270,7 +1269,7 @@ function _M.resize(self, w, h, mode, interpolation)
 end
 
 
-function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
+function _M.fill(self, w, h, fill_mode, gravity_mode)
 
 	if not self.cv_image then
 		return error("ErrorFile", 2)
@@ -1282,8 +1281,8 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 		w = w or 0
 		h = h or 0
 		
-		local n_w
-		local n_h
+		local n_w, n_h
+		
 		if w <= 0 then
 			if h <= 0 then
 				n_w = o_w
@@ -1301,26 +1300,18 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 				n_h = h
 			end
 		end
-
 		
 		if not fill_mode then
 			fill_mode = 'FILL_DEFAULT'
 		end
 		
 		if not gravity_mode then
-			gravity_mode = 'GRAVITY_CENTER'
+			gravity_mode = 'GRAVITY_NORTH'
 		end
 		
 		if gravity_mode == 'GRAVITY_XY_CENTER' then
-			return error("ErrorGravity")
+			gravity_mode = 'GRAVITY_NORTH'
 		end
-		
-
-		local h_roi
-		local w_roi
-		local x_roi
-		local y_roi		
-		
 		
 		if fill_mode == 'FILL_THUMB' then
 			if (gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER') then
@@ -1329,32 +1320,37 @@ function _M.fill(self, w, h, fill_mode, gravity_mode, x, y)
 			fill_mode = 'FILL_DEFAULT'
 		end
 		
-		
-
 		if fill_mode == 'FILL_DEFAULT' then
-			
 		elseif fill_mode == 'FILL_LIMIT' then
 			n_w = (n_w > o_w) and o_w or n_w
 			n_h = (n_h > o_h) and o_h or n_h
 		end
 		
-		
-		
+		local h_roi, w_roi, x_roi, y_roi	
 		x_roi, y_roi = cv_center_of_gravity(self.cv_image, gravity_mode)
 		
 		if n_w/n_h >= o_w/o_h then
 			w_roi = o_w
 			h_roi = n_h*w_roi/n_w
 			x_roi = 0
-			y_roi = (y_roi - h_roi / 2) > 0 and (y_roi - h_roi / 2) or 0
+			if y_roi == 0 then
+			elseif (y_roi == o_h or y_roi + h_roi / 2 > o_h) then
+				y_roi = o_h - h_roi
+			else
+				y_roi = y_roi - h_roi / 2 > 0 and y_roi - h_roi / 2 or 0
+			end
 		else
 			h_roi = o_h
 			w_roi = h_roi*n_w/n_h
-			x_roi = (x_roi - w_roi / 2) > 0 and (x_roi - w_roi / 2) or 0
 			y_roi = 0
+			if x_roi == 0 then
+			elseif (x_roi == o_w or x_roi + w_roi / 2 > o_w) then
+				x_roi = o_w - w_roi
+			else
+				x_roi = x_roi - w_roi / 2 > 0 and x_roi - w_roi / 2 or 0
+			end
 		end
-		
-		
+
 		self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
 		self:resize(n_w, n_h, '', 'INTER_AREA')
 	end
@@ -1373,8 +1369,7 @@ function _M.thumb(self, w, h, gravity_mode)
 		w = w or 0
 		h = h or 0
 		
-		local n_w
-		local n_h
+		local n_w, n_h
 		if w <= 0 then
 			if h <= 0 then
 				n_w = o_w
@@ -1399,33 +1394,23 @@ function _M.thumb(self, w, h, gravity_mode)
 		end
 		
 		if not (gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER') then
-			return error("ErrorGravity")
+			return self:fill(n_w, n_h, '', gravity_mode)
 		end
 		
 		
 		if (n_w > o_w or n_h > o_h) then
 			return self:fill(n_w, n_h, '', gravity_mode)
 		else
-			local h_roi
-			local w_roi
-			local x_roi
-			local y_roi
+			local h_roi, w_roi, x_roi, y_roi
 			local faces_rect
 	
 			x_roi, y_roi, faces_rect = cv_center_of_gravity(self.cv_image, gravity_mode)
 			
 			if (n_w < faces_rect.width or n_h < faces_rect.height) then
-				
-				local face_rect_increase_rate = 0.82
-				w_roi = faces_rect.width * face_rect_increase_rate * 2
-				h_roi = faces_rect.height * face_rect_increase_rate * 2
-				x_roi = (x_roi - faces_rect.width * face_rect_increase_rate) > 0 and (x_roi - faces_rect.width * face_rect_increase_rate) or 0
-				y_roi = (y_roi - faces_rect.height * face_rect_increase_rate) > 0 and (y_roi - faces_rect.height * face_rect_increase_rate) or 0
+			
 				n_w = n_w < n_h and n_w or n_h
 				n_h = n_w
-				
-				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
-				self:resize(n_w, n_h, '', 'INTER_AREA')
+				self:fill(n_w, n_h, '', gravity_mode)
 			else
 				h_roi = n_h
 				w_roi = n_w

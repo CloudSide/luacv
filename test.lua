@@ -1,8 +1,24 @@
 local luacv = require "luacv"
+local magick = require "magick"
+
+
+--local mgk = magick.load_image("files/244_.gif")
+--local format = mgk:get_format():lower()  
+--if format == 'gif' then 
+--	mgk:set_first_iterator() 
+--	mgk:set_format('jpeg')
+--end
+--
+--local w = mgk:get_width()
+--local h = mgk:get_height()
+--local cvimg = luacv.create_image(w, h, 8, 4)                                                                                       
+--mgk:export_image_pixels(0, 0, w, h, 'BGRA', 'CharPixel', cvimg:get_image_data()) 
+
+
 
 --test load image
 --[
-local image = luacv.load_image("files/test_0x1.jpg", "UNCHANGED") --test_0x1.jpg
+local image = luacv.load_image("files/演示照片.jpg", "UNCHANGED") --test_0x1.jpg
 
 --[[
 local faces = image:object_detect("haarcascade_frontalface_alt2.xml")
@@ -40,13 +56,13 @@ image:resize(100, 50)
 image:save_image("files/test_resize.jpg")
 --]]
 
---[
-image:fill(500, 2000)
+--[[
+image:fill(97, 98, 'FILL_DEFAULT', 'GRAVITY_FACE')
 image:save_image("files/test_fill.jpg")
 --]]
 
---[[
-image:thumb(147, 98, 'GRAVITY_WEST')
+--[
+image:thumb(300, 300, 'GRAVITY_FACE')
 image:save_image("files/test_thumb.jpg")
 --]]
 
@@ -60,7 +76,7 @@ image:pad(80, 800, 'PAD_LIMIT', nil, {255,0,255,1})
 --image:save_image("files/test_pad2.jpg")
 --]]
 
---[
+--[[
 image:round_corner(-100, {0,0,0,255})
 image:save_image("files/test_round_corner.jpg")
 --]]
