@@ -1407,9 +1407,6 @@ function _M.thumb(self, w, h, gravity_mode)
 			x_roi, y_roi, faces_rect = cv_center_of_gravity(self.cv_image, gravity_mode)
 			
 			if (n_w < faces_rect.width or n_h < faces_rect.height) then
-			
-				n_w = n_w < n_h and n_w or n_h
-				n_h = n_w
 				self:fill(n_w, n_h, '', gravity_mode)
 			else
 				h_roi = n_h
