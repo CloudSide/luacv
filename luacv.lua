@@ -1851,13 +1851,13 @@ function _M.to_magick(self)
 		storageType = "UndefinedPixel"
 	end
 	
-	local map = string.format("%c%c%c%c", self.cv_image.colorModel[2], self.cv_image.colorModel[1], self.cv_image.colorModel[0], self.cv_image.colorModel[3])
+	--local map = string.format("%c%c%c%c", self.cv_image.colorModel[2], self.cv_image.colorModel[1], self.cv_image.colorModel[0], self.cv_image.colorModel[3])
 
 	local rect = cv_get_image_roi(self.cv_image)
 	
 	local dst = cv_create_image(rect.width, rect.height, self.cv_image.depth, self.cv_image.nChannels)
 	cv_copy(self.cv_image, dst)
-	local mgk = magick.constitute_image(dst.width, dst.height, map, storageType, dst.imageData)
+	local mgk = magick.constitute_image(dst.width, dst.height, 'BGRA', storageType, dst.imageData)
 	cv_release_image(dst)
 								
 	return mgk
