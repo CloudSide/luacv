@@ -56,18 +56,18 @@ image:resize(100, 50)
 image:save_image("files/test_resize.jpg")
 --]]
 
---[
+--[[
 image:fill(50, 100, 'FILL_DEFAULT', 'GRAVITY_FACE')
 image:save_image("files/test_fill.jpg")
 --]]
 
 --[[
-image:thumb(300, 300, 'GRAVITY_FACE')
+image:thumb(450, 450, 'GRAVITY_FACE')
 image:save_image("files/test_thumb.jpg")
 --]]
 
---[[
-image:crop(0,0,250,250)
+--[
+image:crop(nil, nil, 300, 200, 'GRAVITY_EAST')
 image:save_image("files/test_crop.jpg")
 --]]
 
