@@ -917,7 +917,13 @@ local function cv_object_detect(image, casc, find_biggest_object)
 				y_max = rect.y
 				idx_y_max = i + 1
 			end
-			table.insert(rects, rect)
+			local final_rect = cv_rect(
+				rect.x,
+				rect.y,
+				rect.width,
+				rect.height
+			)
+			table.insert(rects, final_rect)
 		end
 	end
 
@@ -1773,8 +1779,10 @@ function _M.to_magick(self)
 	end
 	
 	local map = string.format("%c%c%c%c", self.cv_image.colorModel[2], self.cv_image.colorModel[1], self.cv_image.colorModel[0], self.cv_image.colorModel[3])
+
+	local rect = cv_get_image_roi(self.cv_image)
 	
-	local dst = cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels)
+	local dst = cv_create_image(rect.width, rect.height, self.cv_image.depth, self.cv_image.nChannels)
 	cv_copy(self.cv_image, dst)
 	local mgk = magick.constitute_image(dst.width, dst.height, map, storageType, dst.imageData)
 	cv_release_image(dst)
