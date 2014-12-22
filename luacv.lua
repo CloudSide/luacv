@@ -1551,6 +1551,14 @@ function _M.crop(self, x, y, w, h, gravity_mode)
 				end
 			end
 			
+			if gravity_mode == 'GRAVITY_XY_CENTER' then
+				x = x - n_w/2 > 0 and x - n_w/2 or 0
+				y = y - n_h/2 > 0 and y - n_h/2 or 0
+			else
+				x = x < 0 and 0 or x
+				y = y < 0 and 0 or y
+			end
+			
 			self:set_image_roi(x, y, n_w, n_h)
 			local rect = cv_get_image_roi(self.cv_image)
 			local dst = cv_create_image(rect.width, rect.height, self.cv_image.depth, self.cv_image.nChannels)
@@ -1559,7 +1567,6 @@ function _M.crop(self, x, y, w, h, gravity_mode)
 			self.cv_image = dst
 			
 			return
-			
 		end				
 		
 	end
