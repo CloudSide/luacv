@@ -1576,15 +1576,14 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 		local o_w = roi_rect.width
 		local o_h = roi_rect.height
 
-		w = w or 0
-		h = h or 0
+		if w == nil and h == nil then
+			return
+		end
 		
-		local n_w
-		local n_h
+		local n_w, n_h
 		if w <= 0 then
 			if h <= 0 then
-				n_w = o_w
-				n_h = o_h
+				return
 			else
 				n_h = h
 				n_w = o_w*n_h/o_h
@@ -1618,7 +1617,6 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 			color = cv_scalar(255, 255, 255, 0)
 		end
 		
-		
 		local resize_h
 		local resize_w 
 		
@@ -1650,30 +1648,21 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 		end
 		
 
-		
-		local x
-		local y
-		
+		local x, y
 		local dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
 		cv_set(dst, color)
 		x, y = cv_center_of_gravity(dst, gravity_mode)
 		
 		self:resize(resize_w, resize_h, nil, 'INTER_AREA')
 
-		if x > n_w/2 then
-			x = n_w - resize_w
-		elseif x < n_w/2 then
-			x = 0
-		else
-			x = x - resize_w/2
+		if x > n_w/2 then x = n_w - resize_w
+		elseif x < n_w/2 then x = 0
+		else x = x - resize_w/2
 		end
 		
-		if y > n_h/2 then
-			y = n_h - resize_h
-		elseif y < n_h/2 then
-			y = 0
-		else
-			y = y - resize_h/2
+		if y > n_h/2 then y = n_h - resize_h
+		elseif y < n_h/2 then y = 0
+		else y = y - resize_h/2
 		end
 		
 		cv_set_image_roi(dst, x, y, resize_w, resize_h)

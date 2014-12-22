@@ -66,14 +66,14 @@ image:thumb(450, 450, 'GRAVITY_FACE')
 image:save_image("files/test_thumb.jpg")
 --]]
 
---[
+--[[
 image:crop(nil, nil, 300, 200, 'GRAVITY_EAST')
 image:save_image("files/test_crop.jpg")
 --]]
 
---[[
-image:pad(80, 800, 'PAD_LIMIT', nil, {255,0,255,1})
---image:save_image("files/test_pad2.jpg")
+--[
+image:pad(800, 80, 'PAD_LIMIT', nil, {255,0,255,1})
+image:save_image("files/test_pad2.jpg")
 --]]
 
 --[[
