@@ -1352,7 +1352,7 @@ function _M.fill(self, w, h, fill_mode, gravity_mode)
 		end
 
 		self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
-		self:resize(n_w, n_h, '', 'INTER_AREA')
+		self:resize(n_w, n_h, nil, 'INTER_AREA')
 	end
 	return
 end
@@ -1394,12 +1394,12 @@ function _M.thumb(self, w, h, gravity_mode)
 		end
 		
 		if not (gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER') then
-			return self:fill(n_w, n_h, '', gravity_mode)
+			return self:fill(n_w, n_h, nil, gravity_mode)
 		end
 		
 		
 		if (n_w > o_w or n_h > o_h) then
-			return self:fill(n_w, n_h, '', gravity_mode)
+			return self:fill(n_w, n_h, nil, gravity_mode)
 		else
 			local h_roi, w_roi, x_roi, y_roi
 			local faces_rect
@@ -1407,7 +1407,7 @@ function _M.thumb(self, w, h, gravity_mode)
 			x_roi, y_roi, faces_rect = cv_center_of_gravity(self.cv_image, gravity_mode)
 			
 			if (n_w < faces_rect.width or n_h < faces_rect.height) then
-				self:fill(n_w, n_h, '', gravity_mode)
+				self:fill(n_w, n_h, nil, gravity_mode)
 			else
 				h_roi = n_h
 				w_roi = n_w
@@ -1575,7 +1575,7 @@ function _M.pad(self, w, h, pad_mode, gravity_mode, pad_color)
 		cv_set(dst, color)
 		x, y = cv_center_of_gravity(dst, gravity_mode)
 		
-		self:resize(resize_w, resize_h, '', 'INTER_AREA')
+		self:resize(resize_w, resize_h, nil, 'INTER_AREA')
 
 		if x > n_w/2 then
 			x = n_w - resize_w
