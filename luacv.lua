@@ -1341,7 +1341,8 @@ function _M.fill(self, w, h, fill_mode, gravity_mode)
 		end
 		
 		if n_w/n_h >= o_w/o_h then
-			w_roi = o_w - (o_w/2 - faces_rect.width/2)
+			--w_roi = o_w - (o_w/2 - faces_rect.width/2)
+			w_roi = o_w
 			h_roi = n_h*w_roi/n_w
 			x_roi = 0
 			if y_roi == 0 then
@@ -1351,7 +1352,8 @@ function _M.fill(self, w, h, fill_mode, gravity_mode)
 				y_roi = y_roi - h_roi / 2 > 0 and y_roi - h_roi / 2 or 0
 			end
 		else
-			h_roi = o_h - (o_h/2 - faces_rect.height/2)
+			--h_roi = o_h - (o_h/2 - faces_rect.height/2)
+			h_roi = o_h
 			w_roi = h_roi*n_w/n_h
 			y_roi = 0
 			
@@ -1417,13 +1419,61 @@ function _M.thumb(self, w, h, gravity_mode)
 			local faces_rect
 	
 			x_roi, y_roi, faces_rect = cv_center_of_gravity(self.cv_image, gravity_mode)
+			
 			if (n_w < faces_rect.width or n_h < faces_rect.height) then
-				self:fill(n_w, n_h, nil, gravity_mode)
+				
+				--self:fill(n_w, n_h, nil, gravity_mode)
+				
+				if faces_rect == nil then
+					faces_rect = cv_rect(0, 0, o_w, o_h)
+				end
+				
+				if n_w/n_h >= o_w/o_h then
+					w_roi = o_w - (o_w/2 - faces_rect.width/2)
+					h_roi = n_h*w_roi/n_w
+					x_roi = 0
+					if y_roi == 0 then
+					elseif (y_roi == o_h or y_roi + h_roi / 2 > o_h) then
+						y_roi = o_h - h_roi
+					else
+						y_roi = y_roi - h_roi / 2 > 0 and y_roi - h_roi / 2 or 0
+					end
+				else
+					h_roi = o_h - (o_h/2 - faces_rect.height/2)
+					w_roi = h_roi*n_w/n_h
+					y_roi = 0
+					
+					if x_roi == 0 then
+					elseif (x_roi == o_w or x_roi + w_roi / 2 > o_w) then
+						x_roi = o_w - w_roi
+					else
+						x_roi = x_roi - w_roi / 2 > 0 and x_roi - w_roi / 2 or 0
+					end
+				end
+
+				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
+				self:resize(n_w, n_h, nil, 'INTER_AREA')
 			else
 				h_roi = n_h
 				w_roi = n_w
-				x_roi = (x_roi - w_roi / 2) > 0 and (x_roi - w_roi / 2) or 0
-				y_roi = (y_roi - h_roi / 2) > 0 and (y_roi - h_roi / 2) or 0
+				
+				if (x_roi - w_roi / 2) > 0 and (x_roi + w_roi/2) <= o_w then
+					x_roi = (x_roi - w_roi / 2)
+				elseif (x_roi - w_roi / 2) > 0 and (x_roi + w_roi/2) > o_w then
+					x_roi = o_w - w_roi
+				else
+					x_roi = 0
+				end
+				
+				if (y_roi - h_roi / 2) > 0 and (y_roi + h_roi/2) <= o_h then
+					y_roi = (y_roi - h_roi / 2)
+				elseif (y_roi - h_roi / 2) > 0 and (y_roi + h_roi/2) > o_h then
+					y_roi = o_h - h_roi
+				else
+					y_roi = 0
+				end
+				--x_roi = (x_roi - w_roi / 2) > 0 and (x_roi - w_roi / 2) or 0
+				--y_roi = (y_roi - h_roi / 2) > 0 and (y_roi - h_roi / 2) or 0
 				self:set_image_roi(x_roi, y_roi, w_roi, h_roi)
 				local dst = cv_create_image(w_roi, h_roi, self.cv_image.depth, self.cv_image.nChannels)
 				cv_copy(self.cv_image, dst)
