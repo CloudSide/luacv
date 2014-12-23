@@ -92,7 +92,17 @@ ffi.cdef([[
 
   MagickBooleanType MagickShadowImage(MagickWand *wand,const double alpha,
     const double sigma,const ssize_t x,const ssize_t y);
+
+  MagickBooleanType MagickBorderImage(MagickWand *wand,
+	const PixelWand *bordercolor,
+	const size_t width,
+    const size_t height);
   
+  MagickBooleanType MagickFrameImage(MagickWand *wand,
+    const PixelWand *matte_color,const size_t width,
+    const size_t height,const ssize_t inner_bevel,
+    const ssize_t outer_bevel);
+
   PixelWand *NewPixelWand(void);
   MagickBooleanType PixelSetColor(PixelWand *wand,const char *color);
   PixelWand *DestroyPixelWand(PixelWand *);
@@ -405,7 +415,9 @@ do
       end
       local pixelWand = lib.NewPixelWand();
       lib.PixelSetColor(pixelWand, background)
-      return handle_result(self, lib.MagickRotateImage(self.wand, pixelWand, degrees))
+      local hr = handle_result(self, lib.MagickRotateImage(self.wand, pixelWand, degrees))
+	  lib.DestroyPixelWand(pixelWand)
+	  return hr
     end,
     edge = function(self, radius)
       return handle_result(self, lib.MagickEdgeImage(self.wand, radius))
@@ -442,6 +454,26 @@ do
       end
       return handle_result(self, lib.MagickSharpenImage(self.wand, radius, sigma))
     end,
+	border = function(self, color, w, h)
+		if color == nil then
+			color = "rgba(255,255,255,0)"
+		end
+		local pixelWand = lib.NewPixelWand();
+		lib.PixelSetColor(pixelWand, color)
+		local hr = handle_result(self, lib.MagickBorderImage(self.wand, pixelWand, w, h))
+		lib.DestroyPixelWand(pixelWand)
+		return hr	
+	end,
+	frame = function(self, color, w, h, inner_bevel, outer_bevel)
+		if color == nil then
+			color = "rgba(255,255,255,0)"
+		end
+		local pixelWand = lib.NewPixelWand();
+		lib.PixelSetColor(pixelWand, color)
+		local hr = handle_result(self, lib.MagickFrameImage(self.wand, pixelWand, w, h, inner_bevel, outer_bevel))
+		lib.DestroyPixelWand(pixelWand)
+		return hr	
+	end,
     composite = function(self, blob, x, y, opstr)
       if opstr == nil then
         opstr = "OverCompositeOp"

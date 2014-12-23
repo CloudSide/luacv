@@ -1106,7 +1106,8 @@ function _M.line(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
 end
 
 function _M.release_image(self)
-	return cv_release_image(self.cv_image)
+	cv_release_image(self.cv_image)
+	self.cv_image = nil
 end
 					
 function _M.rectangle(self, x1, y1, x2, y2, scalar, thickness, line_type, shift)
