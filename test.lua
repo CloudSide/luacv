@@ -18,7 +18,7 @@ local magick = require "magick"
 
 --test load image
 --[
-local image = luacv.load_image("files/yanshi.jpg", "UNCHANGED") --test_0x1.jpg
+local image = luacv.load_image("files/yanshi_2.jpg", "UNCHANGED") --test_0x1.jpg
 
 --[[
 local faces = image:object_detect("haarcascade_frontalface_alt2.xml")
@@ -61,8 +61,8 @@ image:fill(50, 100, 'FILL_DEFAULT', 'GRAVITY_FACE')
 image:save_image("files/test_fill.jpg")
 --]]
 
---[[
-image:thumb(450, 450, 'GRAVITY_FACE')
+--[
+image:thumb(450, 400, 'GRAVITY_FACE')
 image:save_image("files/test_thumb.jpg")
 --]]
 
@@ -71,8 +71,8 @@ image:crop(nil, nil, 300, 200, 'GRAVITY_EAST')
 image:save_image("files/test_crop.jpg")
 --]]
 
---[
-image:pad(800, 80, 'PAD_LIMIT', nil, {255,0,255,1})
+--[[
+image:pad(1000, 400, 'PAD_LIMIT', nil, {255,0,255,1})
 image:save_image("files/test_pad2.jpg")
 --]]
 
