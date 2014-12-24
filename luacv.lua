@@ -1755,39 +1755,47 @@ function _M.round_corner(self, radius, bg_color)
 		
 		local line_color = cv_scalar(255, 255, 255, 255)
 		
-		if self.cv_image.width > self.cv_image.height  then
-			radius = radius > self.cv_image.height / 2 and  self.cv_image.height / 2 or radius
+		local roi_rect = cv_get_image_roi(self.cv_image)
+		local o_w = roi_rect.width
+		local o_h = roi_rect.height
+		if o_w > o_h  then
+			radius = radius > o_h / 2 and o_h / 2 or radius
 		else
-			radius = radius > self.cv_image.width / 2 and  self.cv_image.width / 2 or radius
+			radius = radius > o_w / 2 and o_w / 2 or radius
 		end
 		
 		local scale_rate = 5
-		local roi_x = self.cv_image.width*(scale_rate-1)/2-1
-		local roi_y = self.cv_image.height*(scale_rate-1)/2
+		local roi_x = o_w * (scale_rate - 1) / 2 - 1
+		local roi_y = o_h * (scale_rate - 1) / 2
 		
-		local mask = _M:CV(cv_create_image(self.cv_image.width*scale_rate, self.cv_image.height*scale_rate, self.cv_image.depth, self.cv_image.nChannels))
+		local mask = _M:CV(cv_create_image(o_w * scale_rate, o_h * scale_rate, self.cv_image.depth, self.cv_image.nChannels))
 		
 		if (radius == 0) then
-			mask:rectangle(0, 0, self.cv_image.width, self.cv_image.height, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:rectangle(0, 0, o_w, o_h, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
 		elseif (radius < 0) then
-			mask:ellipse(self.cv_image.width*scale_rate/2-2, self.cv_image.height*scale_rate/2, self.cv_image.width/2-1, self.cv_image.height/2, 0, 0, 360, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:ellipse(o_w*scale_rate/2-2, o_h*scale_rate/2, o_w/2-1, o_h/2, 0, 0, 360, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
 		else
-			mask:rectangle(roi_x + radius, roi_y, roi_x + self.cv_image.width - radius, roi_y + self.cv_image.height, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
-			mask:rectangle(roi_x, roi_y + radius, roi_x + self.cv_image.width, roi_y + self.cv_image.height - radius, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:rectangle(roi_x + radius, roi_y, roi_x + o_w - radius, roi_y + o_h, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:rectangle(roi_x, roi_y + radius, roi_x + o_w, roi_y + o_h - radius, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
 				
-			mask:ellipse(roi_x + radius-1, roi_y + radius-1, radius-1, radius-1, 0, 180, 270, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
-			mask:ellipse(roi_x + self.cv_image.width - radius-1, roi_y + radius, radius, radius, 0, 270, 360, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
-			mask:ellipse(roi_x + self.cv_image.width - radius, roi_y + self.cv_image.height - radius, radius-1, radius-1, 0, 0, 90, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
-			mask:ellipse(roi_x + radius-1, roi_y + self.cv_image.height - radius, radius-1, radius-1, 0, 180, 90, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+--			mask:ellipse(roi_x + radius-1, roi_y + radius-1, radius-1, radius-1, 0, 180, 270, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+--			mask:ellipse(roi_x + o_w - radius-1, roi_y + radius, radius, radius, 0, 270, 360, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+--			mask:ellipse(roi_x + o_w - radius, roi_y + o_h - radius, radius-1, radius-1, 0, 0, 90, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+--			mask:ellipse(roi_x + radius-1, roi_y + o_h - radius, radius-1, radius-1, 0, 180, 90, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+
+			mask:ellipse(roi_x + radius, roi_y + radius, radius, radius, 0, 180, 270, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:ellipse(roi_x + o_w - radius, roi_y + radius, radius, radius, 0, 270, 360, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:ellipse(roi_x + o_w - radius, roi_y + o_h - radius, radius, radius, 0, 0, 90, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
+			mask:ellipse(roi_x + radius, roi_y + o_h - radius, radius, radius, 0, 180, 90, {line_color.val[0],line_color.val[1],line_color.val[2],line_color.val[3]}, -1, 'CV_AA')
 		end
 		
-		mask:set_image_roi(roi_x, roi_y, self.cv_image.width, self.cv_image.height)
-		local dst2 = cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels)
+		mask:set_image_roi(roi_x, roi_y, o_w, o_h)
+		local dst2 = cv_create_image(o_w, o_h, self.cv_image.depth, self.cv_image.nChannels)
 		cv_and(self.cv_image, mask.cv_image, dst2, nil)
 
 		cv_not(mask.cv_image, mask.cv_image)
 		
-		local dst1 = cv_create_image(self.cv_image.width, self.cv_image.height, self.cv_image.depth, self.cv_image.nChannels)
+		local dst1 = cv_create_image(o_w, o_h, self.cv_image.depth, self.cv_image.nChannels)
 		cv_set(dst1, background_color)
 		cv_and(dst1, mask.cv_image, dst1, nil)
 		cv_or(dst1, dst2, dst1, nil)
@@ -1834,59 +1842,59 @@ end
 --end
 
 --未完成版
---function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)
---
---	if not self.cv_image or not src.cv_image then
---		return error("Failed to overlay image")
---	else
---		local o_w = src.cv_image.width
---		local o_h = src.cv_image.height
---		
---		x = x or 0
---		y = y or 0
---		w = w or 0
---		h = h or 0
---		
---		local n_w
---		local n_h
---		if w <= 0 then
---			if h <= 0 then
---				n_w = o_w
---				n_h = o_h
---			else
---				n_h = h
---				n_w = o_w*n_h/o_h
---			end
---		else
---			if h <= 0 then
---				n_w = w
---				n_h = n_w*o_h/o_w
---			else
---				n_w = w
---				n_h = h
---			end
---		end
---		
---		n_w = n_w > src.cv_image.width and src.cv_image.width or n_w
---		n_h = n_h > src.cv_image.height and src.cv_image.height or n_h
---		
---		if not fill_mode then
---			fill_mode = 'OVERLAY_BADGE'
---		end
---		
---		if not gravity_mode then
---			gravity_mode = 'GRAVITY_SOUTH_EAST'
---		end
---		
---		
---		self:set_image_roi(x, y, n_w, n_h)
---		src:set_image_roi(0, 0, n_w, n_h)
---		cv_add_weighted(self.cv_image, 1-alpha, src.cv_image, alpha, 0.0, self.cv_image)
---		cv_reset_image_roi(self.cv_image)
---		
---		return self
---	end
---end
+function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)
+
+	if not self.cv_image or not src.cv_image then
+		return error("Failed to overlay image")
+	else
+		local o_w = src.cv_image.width
+		local o_h = src.cv_image.height
+		
+		x = x or 0
+		y = y or 0
+		w = w or 0
+		h = h or 0
+		
+		local n_w
+		local n_h
+		if w <= 0 then
+			if h <= 0 then
+				n_w = o_w
+				n_h = o_h
+			else
+				n_h = h
+				n_w = o_w*n_h/o_h
+			end
+		else
+			if h <= 0 then
+				n_w = w
+				n_h = n_w*o_h/o_w
+			else
+				n_w = w
+				n_h = h
+			end
+		end
+		
+		n_w = n_w > src.cv_image.width and src.cv_image.width or n_w
+		n_h = n_h > src.cv_image.height and src.cv_image.height or n_h
+		
+		if not overlay_mode then
+			fill_mode = 'OVERLAY_BADGE'
+		end
+		
+		if not gravity_mode then
+			gravity_mode = 'GRAVITY_SOUTH_EAST'
+		end
+		
+		
+		self:set_image_roi(x, y, n_w, n_h)
+		src:set_image_roi(0, 0, n_w, n_h)
+		cv_add_weighted(self.cv_image, 1-alpha, src.cv_image, alpha, 0.0, self.cv_image)
+		cv_reset_image_roi(self.cv_image)
+		
+		return self
+	end
+end
 
 function _M.to_magick(self)
 

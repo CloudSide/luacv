@@ -61,7 +61,7 @@ image:fill(700, 700, 'FILL_DEFAULT', 'GRAVITY_FACE')
 image:save_image("files/test_fill.jpg")
 --]]
 
---[
+--[[
 image:thumb(700, 700, 'GRAVITY_FACE')
 image:save_image("files/test_thumb.jpg")
 --]]
@@ -76,8 +76,8 @@ image:pad(1000, 400, 'PAD_LIMIT', nil, {255,0,255,1})
 image:save_image("files/test_pad2.jpg")
 --]]
 
---[[
-image:round_corner(-100, {0,0,0,255})
+--[
+image:round_corner(400, {0,0,0,255})
 image:save_image("files/test_round_corner.jpg")
 --]]
 
