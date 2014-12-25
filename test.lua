@@ -2,22 +2,22 @@ local luacv = require "luacv"
 local magick = require "magick"
 
 
---local mgk = magick.load_image("files/244_.gif")
---local format = mgk:get_format():lower()  
---if format == 'gif' then 
---	mgk:set_first_iterator() 
---	mgk:set_format('jpeg')
---end
---
---local w = mgk:get_width()
---local h = mgk:get_height()
---local cvimg = luacv.create_image(w, h, 8, 4)                                                                                       
---mgk:export_image_pixels(0, 0, w, h, 'BGRA', 'CharPixel', cvimg:get_image_data()) 
+local mgk = magick.load_image("files/face-detection.png")
+local format = mgk:get_format():lower()  
+if format == 'gif' then 
+	mgk:set_first_iterator() 
+	mgk:set_format('jpeg')
+end
+
+local w = mgk:get_width()
+local h = mgk:get_height()
+local image = luacv.create_image(w, h, 8, 4)                                                                                       
+mgk:export_image_pixels(0, 0, w, h, 'BGRA', 'CharPixel', image:get_image_data()) 
 
 
 
 --test load image
---[
+--[[
 local image = luacv.load_image("files/yanshi.jpg", "UNCHANGED") --test_0x1.jpg
 
 --[[
@@ -61,8 +61,8 @@ image:fill(700, 700, 'FILL_DEFAULT', 'GRAVITY_FACE')
 image:save_image("files/test_fill.jpg")
 --]]
 
---[[
-image:thumb(700, 700, 'GRAVITY_FACE')
+--[
+image:thumb(80, 80, 'GRAVITY_FACE')
 image:save_image("files/test_thumb.jpg")
 --]]
 
@@ -76,7 +76,7 @@ image:pad(1000, 400, 'PAD_LIMIT', nil, {255,0,255,1})
 image:save_image("files/test_pad2.jpg")
 --]]
 
---[
+--[[
 image:round_corner(400, {0,0,0,255})
 image:save_image("files/test_round_corner.jpg")
 --]]
@@ -88,9 +88,25 @@ aa:save_image("files/test_round_corner.png")
 --]]
 
 --[[
-local src = luacv.load_image("files/test_1.jpg", "ANYCOLOR")
-local img = image:overlay(src, 200, 200, 200, 200, 1)
-img:save_image("files/test_overlay.jpg")
+
+
+local mgk2 = magick.load_image("files/alpha.png")
+local format2 = mgk2:get_format():lower()  
+if format2 == 'gif' then 
+	mgk2:set_first_iterator() 
+	mgk2:set_format('jpeg')
+end
+
+local w2 = mgk2:get_width()
+local h2 = mgk2:get_height()
+local cvimg2 = luacv.create_image(w2, h2, 8, 4)                                                                                       
+mgk2:export_image_pixels(0, 0, w2, h2, 'BGRA', 'CharPixel', cvimg2:get_image_data()) 
+
+--local src = luacv.load_image("files/alpha.png", 'UNCHANGED')
+--local mask = luacv.load_image("files/alpha.png",'GRAYSCALE')
+--print(mask.cv_image.nChannels)
+image:overlay(cvimg2, 700, 200, 2000, 2000, 0.4)
+image:save_image("files/test_overlay.png")
 --]]
 
 image:release_image()

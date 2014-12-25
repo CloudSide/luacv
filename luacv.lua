@@ -1429,7 +1429,7 @@ function _M.thumb(self, w, h, gravity_mode)
 				end
 				
 				if n_w/n_h >= o_w/o_h then
-					w_roi = o_w - (o_w/2 - faces_rect.width/2)
+					w_roi = o_w -- (o_w/2 - faces_rect.width/2)
 					h_roi = n_h*w_roi/n_w
 					x_roi = 0
 					if y_roi == 0 then
@@ -1439,7 +1439,7 @@ function _M.thumb(self, w, h, gravity_mode)
 						y_roi = y_roi - h_roi / 2 > 0 and y_roi - h_roi / 2 or 0
 					end
 				else
-					h_roi = o_h - (o_h/2 - faces_rect.height/2)
+					h_roi = o_h -- (o_h/2 - faces_rect.height/2)
 					w_roi = h_roi*n_w/n_h
 					y_roi = 0
 					
@@ -1841,14 +1841,19 @@ end
 --
 --end
 
+local function printf(...)
+	print(string.format(...))
+end
+
 --未完成版
 function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)
 
 	if not self.cv_image or not src.cv_image then
 		return error("Failed to overlay image")
 	else
-		local o_w = src.cv_image.width
-		local o_h = src.cv_image.height
+		local roi_rect = cv_get_image_roi(self.cv_image)
+		local o_w = roi_rect.width
+		local o_h = roi_rect.height
 		
 		x = x or 0
 		y = y or 0
@@ -1887,12 +1892,51 @@ function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)
 		end
 		
 		
+		
 		self:set_image_roi(x, y, n_w, n_h)
 		src:set_image_roi(0, 0, n_w, n_h)
+		
+		--[
+		local src1_data = ffi.cast("unsigned char *",src.cv_image.imageData)
+		local step1 = src.cv_image.widthStep
+--		local src2_data = ffi.cast("unsigned char *",self.cv_image.imageData)
+--		local step2 = self.cv_image.widthStep
+		print(src.cv_image.nChannels, self.cv_image.nChannels)
+		for j = 0, n_h, 1 do
+			for i = 0, n_w, 1 do
+			
+				if (src1_data[j*step1+i*4+3] == 0) then
+					
+--					src2_data[y*step2+x*4 + j*step2 + i*4 + 0] = src2_data[y*step2+x*4 + j*step2 + i*4 + 0]
+--					src2_data[y*step2+x*4 + j*step2 + i*4 + 1] = src2_data[y*step2+x*4 + j*step2 + i*4 + 1]
+--					src2_data[y*step2+x*4 + j*step2 + i*4 + 2] = src2_data[y*step2+x*4 + j*step2 + i*4 + 2]
+--					src2_data[y*step2+x*4 + j*step2 + i*4 + 3] = src2_data[y*step2+x*4 + j*step2 + i*4 + 3]
+
+					src1_data[y*step1+x*4 + j*step1 + i*4 + 0] = 0
+					src1_data[y*step1+x*4 + j*step1 + i*4 + 1] = 0
+					src1_data[y*step1+x*4 + j*step1 + i*4 + 2] = 0
+					src1_data[y*step1+x*4 + j*step1 + i*4 + 3] = 0
+					
+				else
+--					src2_data[y*step2+x*4 + j*step2 + i*4 + 0] = src2_data[y*step2+x*4 + j*step2 + i*4 + 0] * (1-alpha/2) + src1_data[j*step1 + i*4 + 0] * alpha
+--					src2_data[y*step2+x*4 + j*step2 + i*4 + 1] = src2_data[y*step2+x*4 + j*step2 + i*4 + 0] * (1-alpha/2) + src1_data[j*step1 + i*4 + 1] * alpha
+--					src2_data[y*step2+x*4 + j*step2 + i*4 + 2] = src2_data[y*step2+x*4 + j*step2 + i*4 + 0] * (1-alpha/2) + src1_data[j*step1 + i*4 + 2] * alpha
+--					src2_data[y*step2+x*4 + j*step2 + i*4 + 3] = 255--src2_data[y*step2+x*4 + j*step2 + i*4 + 3] * (1-alpha) + src1_data[j*step1 + i*4 + 3] * alpha
+
+					src1_data[y*step1+x*4 + j*step1 + i*4 + 0] = 0
+--					src1_data[y*step1+x*4 + j*step1 + i*4 + 1] = 0
+--					src1_data[y*step1+x*4 + j*step1 + i*4 + 2] = 0
+--					src1_data[y*step1+x*4 + j*step1 + i*4 + 3] = 255
+				end
+				
+			end
+		end
+		--]]
+		
 		cv_add_weighted(self.cv_image, 1-alpha, src.cv_image, alpha, 0.0, self.cv_image)
 		cv_reset_image_roi(self.cv_image)
 		
-		return self
+		return
 	end
 end
 
