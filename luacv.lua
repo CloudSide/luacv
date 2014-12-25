@@ -1431,12 +1431,13 @@ function _M.thumb(self, w, h, gravity_mode)
 
 					w_roi = o_w - (o_w/2 - faces_rect.width/2)
 					h_roi = n_h*w_roi/n_w
-					x_roi = o_w/2 - faces_rect.width/2 > 0 and o_w/2 - faces_rect.width/2 or 0
-					if n_w < faces_rect.width then
-						if n_h < faces_rect.height then
-							x_roi = o_w/2 - faces_rect.width > 0 and o_w/2 - faces_rect.width or 0
-						end
+					
+					if (x_roi - (o_w/2 - faces_rect.width/2))/w_roi < 0.3 then
+						x_roi = o_w/2 - faces_rect.width
+					else
+						x_roi = o_w/2 - faces_rect.width/2
 					end
+					
 					
 					if y_roi == 0 then
 					elseif (y_roi == o_h or y_roi + h_roi / 2 > o_h) then
@@ -1447,7 +1448,14 @@ function _M.thumb(self, w, h, gravity_mode)
 				else
 					h_roi = o_h - (o_h/2 - faces_rect.height/2)
 					w_roi = h_roi*n_w/n_h
-					y_roi = o_h/2 - faces_rect.height > 0 and  o_h/2 - faces_rect.height or 0
+					--y_roi = o_h/2 - faces_rect.height > 0 and  o_h/2 - faces_rect.height or 0
+					
+					
+					if (y_roi - (o_h/2 - faces_rect.height/2))/h_roi < 0.3 then
+						y_roi = o_h/2 - faces_rect.height
+					else
+						y_roi = o_h/2 - faces_rect.height/2
+					end
 					
 					if x_roi == 0 then
 					elseif (x_roi == o_w or x_roi + w_roi / 2 > o_w) then
@@ -1929,7 +1937,7 @@ function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)
 --					src2_data[y*step2+x*4 + j*step2 + i*4 + 2] = src2_data[y*step2+x*4 + j*step2 + i*4 + 0] * (1-alpha/2) + src1_data[j*step1 + i*4 + 2] * alpha
 --					src2_data[y*step2+x*4 + j*step2 + i*4 + 3] = 255--src2_data[y*step2+x*4 + j*step2 + i*4 + 3] * (1-alpha) + src1_data[j*step1 + i*4 + 3] * alpha
 
-					src1_data[y*step1+x*4 + j*step1 + i*4 + 0] = 0
+--					src1_data[y*step1+x*4 + j*step1 + i*4 + 0] = 0
 --					src1_data[y*step1+x*4 + j*step1 + i*4 + 1] = 0
 --					src1_data[y*step1+x*4 + j*step1 + i*4 + 2] = 0
 --					src1_data[y*step1+x*4 + j*step1 + i*4 + 3] = 255
