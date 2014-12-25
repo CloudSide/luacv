@@ -1912,8 +1912,12 @@ function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)
 			end
 		end
 		
-		n_w = n_w > src.cv_image.width and src.cv_image.width or n_w
-		n_h = n_h > src.cv_image.height and src.cv_image.height or n_h
+		
+		local src_rect = cv_get_image_roi(src.cv_image)
+		local src_w = src_rect.width
+		local src_h = src_rect.height
+		n_w = n_w > src_w and src_w or n_w
+		n_h = n_h > src_h and src_h or n_h
 		
 		if not overlay_mode then
 			fill_mode = 'OVERLAY_BADGE'
@@ -1928,44 +1932,23 @@ function _M.overlay(self, src, x, y, w, h, alpha, overlay_mode, gravity_mode)
 		self:set_image_roi(x, y, n_w, n_h)
 		src:set_image_roi(0, 0, n_w, n_h)
 		
-		--[
+
 		local src1_data = ffi.cast("unsigned char *",src.cv_image.imageData)
 		local step1 = src.cv_image.widthStep
---		local src2_data = ffi.cast("unsigned char *",self.cv_image.imageData)
---		local step2 = self.cv_image.widthStep
-		print(src.cv_image.nChannels, self.cv_image.nChannels)
+		local src2_data = ffi.cast("unsigned char *",self.cv_image.imageData)
+		local step2 = self.cv_image.widthStep
+
 		for j = 0, n_h, 1 do
 			for i = 0, n_w, 1 do
-			
-				if (src1_data[j*step1+i*4+3] == 0) then
-					
---					src2_data[y*step2+x*4 + j*step2 + i*4 + 0] = src2_data[y*step2+x*4 + j*step2 + i*4 + 0]
---					src2_data[y*step2+x*4 + j*step2 + i*4 + 1] = src2_data[y*step2+x*4 + j*step2 + i*4 + 1]
---					src2_data[y*step2+x*4 + j*step2 + i*4 + 2] = src2_data[y*step2+x*4 + j*step2 + i*4 + 2]
---					src2_data[y*step2+x*4 + j*step2 + i*4 + 3] = src2_data[y*step2+x*4 + j*step2 + i*4 + 3]
-
-					src1_data[y*step1+x*4 + j*step1 + i*4 + 0] = 0
-					src1_data[y*step1+x*4 + j*step1 + i*4 + 1] = 0
-					src1_data[y*step1+x*4 + j*step1 + i*4 + 2] = 0
-					src1_data[y*step1+x*4 + j*step1 + i*4 + 3] = 0
-					
-				else
---					src2_data[y*step2+x*4 + j*step2 + i*4 + 0] = src2_data[y*step2+x*4 + j*step2 + i*4 + 0] * (1-alpha/2) + src1_data[j*step1 + i*4 + 0] * alpha
---					src2_data[y*step2+x*4 + j*step2 + i*4 + 1] = src2_data[y*step2+x*4 + j*step2 + i*4 + 0] * (1-alpha/2) + src1_data[j*step1 + i*4 + 1] * alpha
---					src2_data[y*step2+x*4 + j*step2 + i*4 + 2] = src2_data[y*step2+x*4 + j*step2 + i*4 + 0] * (1-alpha/2) + src1_data[j*step1 + i*4 + 2] * alpha
---					src2_data[y*step2+x*4 + j*step2 + i*4 + 3] = 255--src2_data[y*step2+x*4 + j*step2 + i*4 + 3] * (1-alpha) + src1_data[j*step1 + i*4 + 3] * alpha
-
---					src1_data[y*step1+x*4 + j*step1 + i*4 + 0] = 0
---					src1_data[y*step1+x*4 + j*step1 + i*4 + 1] = 0
---					src1_data[y*step1+x*4 + j*step1 + i*4 + 2] = 0
---					src1_data[y*step1+x*4 + j*step1 + i*4 + 3] = 255
+				if (src1_data[j*step1+i*4+3] > 250) then
+					src2_data[y*step2+x*4 + j*step2 + i*4 + 0] = src2_data[y*step2+x*4 + j*step2 + i*4 + 0] * (1-alpha) + src1_data[j*step1 + i*4 + 0] * alpha
+					src2_data[y*step2+x*4 + j*step2 + i*4 + 1] = src2_data[y*step2+x*4 + j*step2 + i*4 + 1] * (1-alpha) + src1_data[j*step1 + i*4 + 1] * alpha
+					src2_data[y*step2+x*4 + j*step2 + i*4 + 2] = src2_data[y*step2+x*4 + j*step2 + i*4 + 2] * (1-alpha) + src1_data[j*step1 + i*4 + 2] * alpha
+					src2_data[y*step2+x*4 + j*step2 + i*4 + 3] = src2_data[y*step2+x*4 + j*step2 + i*4 + 3] * (1-alpha) + src1_data[j*step1 + i*4 + 3] * alpha
 				end
-				
 			end
 		end
-		--]]
 		
-		cv_add_weighted(self.cv_image, 1-alpha, src.cv_image, alpha, 0.0, self.cv_image)
 		cv_reset_image_roi(self.cv_image)
 		
 		return
