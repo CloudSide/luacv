@@ -1428,9 +1428,16 @@ function _M.thumb(self, w, h, gravity_mode)
 				end
 				
 				if n_w/n_h >= o_w/o_h then
+
 					w_roi = o_w - (o_w/2 - faces_rect.width/2)
 					h_roi = n_h*w_roi/n_w
-					x_roi = 0
+					x_roi = o_w/2 - faces_rect.width/2 > 0 and o_w/2 - faces_rect.width/2 or 0
+					if n_w < faces_rect.width then
+						if n_h < faces_rect.height then
+							x_roi = o_w/2 - faces_rect.width > 0 and o_w/2 - faces_rect.width or 0
+						end
+					end
+					
 					if y_roi == 0 then
 					elseif (y_roi == o_h or y_roi + h_roi / 2 > o_h) then
 						y_roi = o_h - h_roi
@@ -1440,7 +1447,7 @@ function _M.thumb(self, w, h, gravity_mode)
 				else
 					h_roi = o_h - (o_h/2 - faces_rect.height/2)
 					w_roi = h_roi*n_w/n_h
-					y_roi = 0
+					y_roi = o_h/2 - faces_rect.height > 0 and  o_h/2 - faces_rect.height or 0
 					
 					if x_roi == 0 then
 					elseif (x_roi == o_w or x_roi + w_roi / 2 > o_w) then
