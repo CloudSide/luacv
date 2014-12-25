@@ -2,7 +2,7 @@ local luacv = require "luacv"
 local magick = require "magick"
 
 
-local mgk = magick.load_image("files/face-detection.png")
+local mgk = magick.load_image("files/yanshi.jpg")
 local format = mgk:get_format():lower()  
 if format == 'gif' then 
 	mgk:set_first_iterator() 
@@ -56,13 +56,16 @@ image:resize(100, 50)
 image:save_image("files/test_resize.jpg")
 --]]
 
---[[
-image:fill(700, 700, 'FILL_DEFAULT', 'GRAVITY_FACE')
+--[
+
+image:fill(image.cv_image.width*0.99999, 640, 'FILL_DEFAULT', 'GRAVITY_FACE')
+image:fill(640, 640, 'FILL_DEFAULT', 'GRAVITY_FACE')
+image:fill(100)
 image:save_image("files/test_fill.jpg")
 --]]
 
---[
-image:thumb(80, 80, 'GRAVITY_FACE')
+--[[
+image:thumb(800, 400, 'GRAVITY_FACE')
 image:save_image("files/test_thumb.jpg")
 --]]
 

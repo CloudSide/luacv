@@ -1231,9 +1231,8 @@ function _M.resize(self, w, h, mode, interpolation)
 		end
 				
 		
-		if n_w == o_w and n_h == o_h then
-			return
-		else
+		if not (n_w == o_w and n_h == o_h) then
+			
 			if mode == 'RESIZE_SCALE' then
 				
 			elseif mode == 'RESIZE_FIT' then
@@ -1265,12 +1264,12 @@ function _M.resize(self, w, h, mode, interpolation)
 				end
 				
 			end
+		end
 		
-			local dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
-			cv_resize(self.cv_image, dst, interpolation)
-			cv_release_image(self.cv_image)
-			self.cv_image = dst
-		end	
+		local dst = cv_create_image(n_w, n_h, self.cv_image.depth, self.cv_image.nChannels)
+		cv_resize(self.cv_image, dst, interpolation)
+		cv_release_image(self.cv_image)
+		self.cv_image = dst
 	end
 	return
 end
@@ -1335,7 +1334,7 @@ function _M.fill(self, w, h, fill_mode, gravity_mode)
 		
 		local h_roi, w_roi, x_roi, y_roi, faces_rect
 		x_roi, y_roi, faces_rect = cv_center_of_gravity(self.cv_image, gravity_mode)
-		
+
 		if faces_rect == nil then
 			faces_rect = cv_rect(0, 0, o_w, o_h)
 		end
@@ -1429,7 +1428,7 @@ function _M.thumb(self, w, h, gravity_mode)
 				end
 				
 				if n_w/n_h >= o_w/o_h then
-					w_roi = o_w -- (o_w/2 - faces_rect.width/2)
+					w_roi = o_w - (o_w/2 - faces_rect.width/2)
 					h_roi = n_h*w_roi/n_w
 					x_roi = 0
 					if y_roi == 0 then
@@ -1439,7 +1438,7 @@ function _M.thumb(self, w, h, gravity_mode)
 						y_roi = y_roi - h_roi / 2 > 0 and y_roi - h_roi / 2 or 0
 					end
 				else
-					h_roi = o_h -- (o_h/2 - faces_rect.height/2)
+					h_roi = o_h - (o_h/2 - faces_rect.height/2)
 					w_roi = h_roi*n_w/n_h
 					y_roi = 0
 					
@@ -1970,6 +1969,7 @@ function _M.to_magick(self)
 								
 	return mgk
 end
+
 
 return _M
 
