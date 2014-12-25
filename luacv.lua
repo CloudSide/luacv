@@ -1432,10 +1432,20 @@ function _M.thumb(self, w, h, gravity_mode)
 					w_roi = o_w - (o_w/2 - faces_rect.width/2)
 					h_roi = n_h*w_roi/n_w
 					
-					if (x_roi - (o_w/2 - faces_rect.width/2))/w_roi < 0.3 then
-						x_roi = o_w/2 - faces_rect.width
+					--若脸在原图左侧，且位于roi区域的右侧（1/3）处，则x_roi要尽量取的靠右，以保证脸在roi区域的中间
+					--反之同理
+					if x_roi < o_w/2 then
+						if x_roi/w_roi > 0.7 then
+							x_roi = x_roi - faces_rect.width/2 > 0 and x_roi - faces_rect.width/2 or 0
+						else
+							x_roi = x_roi - faces_rect.width > 0 and x_roi - faces_rect.width or 0
+						end
 					else
-						x_roi = o_w/2 - faces_rect.width/2
+						if (x_roi - (o_w/2 - faces_rect.width/2))/w_roi < 0.3 then
+							x_roi = o_w/2 - faces_rect.width > 0 and o_w/2 - faces_rect.width or 0
+						else
+							x_roi = o_w/2 - faces_rect.width/2
+						end
 					end
 					
 					
@@ -1448,14 +1458,22 @@ function _M.thumb(self, w, h, gravity_mode)
 				else
 					h_roi = o_h - (o_h/2 - faces_rect.height/2)
 					w_roi = h_roi*n_w/n_h
-					--y_roi = o_h/2 - faces_rect.height > 0 and  o_h/2 - faces_rect.height or 0
 					
-					
-					if (y_roi - (o_h/2 - faces_rect.height/2))/h_roi < 0.3 then
-						y_roi = o_h/2 - faces_rect.height
+					if y_roi < o_h/2 then
+						if y_roi/h_roi > 0.7 then
+							y_roi = y_roi - faces_rect.height/2 > 0 and y_roi - faces_rect.height/2 or 0
+						else
+							y_roi = y_roi - faces_rect.height > 0 and y_roi - faces_rect.height or 0
+						end
 					else
-						y_roi = o_h/2 - faces_rect.height/2
+						if (y_roi - (o_h/2 - faces_rect.height/2))/h_roi < 0.3 then
+							y_roi = o_h/2 - faces_rect.height
+						else
+							y_roi = o_h/2 - faces_rect.height/2
+						end
 					end
+					
+					
 					
 					if x_roi == 0 then
 					elseif (x_roi == o_w or x_roi + w_roi / 2 > o_w) then
