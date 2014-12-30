@@ -4,6 +4,7 @@ ffi.cdef([[
 
   typedef void MagickWand;
   typedef void PixelWand;
+  typedef void DrawingWand;
 
   typedef int MagickBooleanType;
   typedef int ExceptionType;
@@ -21,6 +22,30 @@ ffi.cdef([[
     QuantumPixel,
     ShortPixel
   } StorageType;
+
+  DrawingWand *NewDrawingWand(void);
+  DrawingWand *DestroyDrawingWand(DrawingWand *wand);
+  void DrawSetFillColor(DrawingWand *wand, const PixelWand *fill_wand);
+  void DrawSetStrokeColor(DrawingWand *wand, const PixelWand *stroke_wand);
+  void DrawSetStrokeAntialias(DrawingWand *wand, const MagickBooleanType stroke_antialias);
+  void DrawRoundRectangle(DrawingWand *wand, double x1, double y1, double x2,double y2, double rx, double ry);
+  void DrawRectangle(DrawingWand *wand, const double x1, const double y1, const double x2, const double y2);
+  void DrawEllipse(DrawingWand *wand, const double ox, const double oy, const double rx, const double ry, const double start, const double end);
+  void DrawSetStrokeWidth(DrawingWand *wand, const double stroke_width);
+
+  void PixelSetOpacity(PixelWand *wand, const double opacity);  
+  double PixelGetRed(const PixelWand *wand);
+  double PixelGetGreen(const PixelWand *wand);
+  double PixelGetBlue(const PixelWand *wand);
+  double PixelGetBlack(const PixelWand *wand);
+  double PixelGetYellow(const PixelWand *wand);
+  double PixelGetAlpha(const PixelWand *wand);
+
+  MagickBooleanType MagickNewImage(MagickWand *wand, const size_t columns, const size_t rows, const PixelWand *background);
+
+  MagickBooleanType MagickDrawImage(MagickWand *wand, const DrawingWand *drawing_wand);
+
+  MagickBooleanType MagickSetImageBackgroundColor(MagickWand *wand, const PixelWand *background);
 
   void MagickWandGenesis();
   void MagickSetFirstIterator(MagickWand *wand);
@@ -103,6 +128,8 @@ ffi.cdef([[
     const size_t height,const ssize_t inner_bevel,
     const ssize_t outer_bevel);
 
+  MagickBooleanType MagickAutoOrientImage(MagickWand *image);
+
   PixelWand *NewPixelWand(void);
   MagickBooleanType PixelSetColor(PixelWand *wand,const char *color);
   PixelWand *DestroyPixelWand(PixelWand *);
@@ -111,6 +138,12 @@ ffi.cdef([[
   double PixelGetRed(const PixelWand *);
   double PixelGetGreen(const PixelWand *);
   double PixelGetBlue(const PixelWand *);
+
+  MagickBooleanType MagickFlopImage(MagickWand *wand);
+  MagickBooleanType MagickFlipImage(MagickWand *wand);
+
+  MagickBooleanType MagickSetImageOpacity(MagickWand *wand, const double alpha);
+
 ]])
 local get_flags
 get_flags = function()
@@ -227,6 +260,18 @@ local storage_type_op = {
   ["LongPixel"] = 5,
   ["QuantumPixel"] = 6,
   ["ShortPixel"] = 7,
+}
+
+local orientation_op = {
+  ["UndefinedOrientation"] = 0,
+  ["TopLeftOrientation"] = 1,
+  ["TopRightOrientation"] = 2,
+  ["BottomRightOrientation"] = 3,
+  ["BottomLeftOrientation"] = 4,
+  ["LeftTopOrientation"] = 5,
+  ["RightTopOrientation"] = 6,
+  ["RightBottomOrientation"] = 7,
+  ["LeftBottomOrientation"] = 8,
 }
 
 local composite_op = {
@@ -454,15 +499,50 @@ do
       end
       return handle_result(self, lib.MagickSharpenImage(self.wand, radius, sigma))
     end,
-	border = function(self, color, w, h)
-		if color == nil then
+	flop = function(self)
+		return handle_result(self, lib.MagickFlopImage(self.wand))
+	end,
+	flip = function(self)
+		return handle_result(self, lib.MagickFlipImage(self.wand))
+	end,
+	opacity = function(self, alpha)
+		return handle_result(self, lib.MagickSetImageOpacity(self.wand, alpha))
+	end,
+	border = function(self, color, bw)
+	--[
+		if not color then
 			color = "rgba(255,255,255,0)"
 		end
-		local pixelWand = lib.NewPixelWand();
-		lib.PixelSetColor(pixelWand, color)
-		local hr = handle_result(self, lib.MagickBorderImage(self.wand, pixelWand, w, h))
-		lib.DestroyPixelWand(pixelWand)
-		return hr	
+
+		if not bw then
+			bw = 1
+		end
+
+		local w, h = self:get_width(), self:get_height()
+
+		local draw = lib.NewDrawingWand()
+		local pixelNone = lib.NewPixelWand() 
+		lib.PixelSetColor(pixelNone, "none")
+		local pixelBorder = lib.NewPixelWand()
+		lib.PixelSetColor(pixelBorder, color)		
+		
+		local mask = lib.NewMagickWand()
+		lib.MagickNewImage(mask, w, h, pixelNone)
+
+		lib.DrawSetFillColor(draw, pixelNone)
+		lib.DrawSetStrokeColor(draw, pixelBorder)
+		lib.DrawSetStrokeWidth(draw, bw)
+		lib.DrawSetStrokeAntialias(draw, false)
+		lib.DrawRectangle(draw, bw / 2 - 1, bw / 2 - 1, w - bw / 2, h - bw / 2)
+
+		lib.MagickDrawImage(mask, draw)
+		lib.MagickCompositeImage(self.wand, mask, composite_op["OverCompositeOp"], 0, 0)
+
+		lib.DestroyPixelWand(pixelNone)
+		lib.DestroyPixelWand(pixelBorder)
+		lib.DestroyMagickWand(mask)
+		lib.DestroyDrawingWand(draw)
+	--]]
 	end,
 	frame = function(self, color, w, h, inner_bevel, outer_bevel)
 		if color == nil then
@@ -472,7 +552,10 @@ do
 		lib.PixelSetColor(pixelWand, color)
 		local hr = handle_result(self, lib.MagickFrameImage(self.wand, pixelWand, w, h, inner_bevel, outer_bevel))
 		lib.DestroyPixelWand(pixelWand)
-		return hr	
+		return hr
+	end,
+	auto_orient = function(self)
+		return handle_result(self, lib.MagickAutoOrientImage(self.wand))
 	end,
     composite = function(self, blob, x, y, opstr)
       if opstr == nil then
@@ -487,6 +570,76 @@ do
       end
       return handle_result(self, lib.MagickCompositeImage(self.wand, blob, op, x, y))
     end,
+	set_bg_color = function(self, color)
+		color = color or "rgba(255,255,255,0)"
+		local pixelWand = lib.NewPixelWand()
+		lib.PixelSetColor(pixelWand, color)
+		lib.MagickSetImageBackgroundColor(self.wand, pixelWand)
+		lib.DestroyPixelWand(pixelWand)
+	end,
+	rounded_corner = function(self, radius, color)
+		local w, h = self:get_width(), self:get_height()
+		radius = radius or 0
+		radius = (radius < 0) and (w + h) or radius
+		if w > h  then
+			--radius = (radius > h / 2) and (h / 2) or radius
+			radius = (radius >= h / 2) and -1 or radius
+		else
+			--radius = (radius > w / 2) and (w / 2) or radius
+			radius = (radius >= w / 2) and -1 or radius
+		end
+
+		local drawWand = lib.NewDrawingWand()
+		local pixelBlack = lib.NewPixelWand()
+		local pixelTrans = lib.NewPixelWand()
+		local pixelWhite = lib.NewPixelWand() 
+		lib.PixelSetColor(pixelBlack, "black")
+		lib.PixelSetColor(pixelTrans, "transparent")
+		lib.PixelSetColor(pixelWhite, "white")
+
+		lib.DrawSetFillColor(drawWand, pixelBlack)
+		lib.DrawSetStrokeColor(drawWand, pixelTrans)
+		--lib.DrawSetStrokeWidth(drawWand, 0)
+		lib.DrawSetStrokeAntialias(drawWand, true)
+		
+		if radius < 0 then
+			lib.DrawEllipse(drawWand, w / 2 - 1, h / 2 - 1, w / 2 - 1, h / 2 - 1, 0, 360)
+		else
+			lib.DrawRoundRectangle(drawWand, 0, 0, w + 0, h + 0, radius + 2, radius + 2)
+		end
+		--local alpha = lib.PixelGetAlpha(pixelWand)
+		--lib.PixelSetOpacity(pixelWand, alpha)
+
+		local mask = lib.NewMagickWand()
+		lib.MagickNewImage(mask, w, h, pixelTrans)
+		lib.MagickSetImageBackgroundColor(mask, pixelTrans)
+
+
+		lib.MagickDrawImage(mask, drawWand)
+		lib.MagickCompositeImage(self.wand, mask, composite_op["DstInCompositeOp"], 0, 0)
+		--lib.MagickCompositeImage(self.wand, mask, composite_op["CopyBlackCompositeOp"], 0, 0)
+
+		--self.wand = mask
+		
+		lib.DestroyPixelWand(pixelBlack)
+		lib.DestroyPixelWand(pixelTrans)
+		lib.DestroyPixelWand(pixelWhite)
+		lib.DestroyMagickWand(mask)
+		lib.DestroyDrawingWand(drawWand)
+
+
+		color = color or "white"
+		local pixelWand = lib.NewPixelWand()
+		lib.PixelSetColor(pixelWand, color)
+
+		local mask_bg = lib.NewMagickWand()
+		lib.MagickNewImage(mask_bg, w, h, pixelWand)
+		lib.MagickCompositeImage(self.wand, mask_bg, composite_op["DstOverCompositeOp"], 0, 0)
+
+		lib.DestroyPixelWand(pixelWand)
+		lib.DestroyMagickWand(mask_bg)
+
+	end,
     resize_and_crop = function(self, w, h)
       local src_w, src_h = self:get_width(), self:get_height()
       local ar_src = src_w / src_h
