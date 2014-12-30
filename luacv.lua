@@ -1075,6 +1075,8 @@ function _M.save_image(self, filename, opt)
 			opt_val = ffi.new("int[3]", {save_op['JPEG_QUALITY'], opt['JPEG_QUALITY'], 0})
 		elseif opt['PNG_COMPRESSION'] and tonumber(opt['PNG_COMPRESSION']) and tonumber(opt['PNG_COMPRESSION']) >= 0 and tonumber(opt['PNG_COMPRESSION']) <= 9  then
 			opt_val = ffi.new("int[3]", {save_op['PNG_COMPRESSION'], opt['PNG_COMPRESSION'], 0})
+		elseif opt['WEBP_QUALITY'] and tonumber(opt['WEBP_QUALITY']) and tonumber(opt['WEBP_QUALITY']) >= 1 and tonumber(opt['WEBP_QUALITY']) <= 100 then
+			opt_val = ffi.new("int[3]", {save_op['WEBP_QUALITY'], opt['WEBP_QUALITY'], 0})
 		end
 	end
 	if 1 == cvHighgui.cvSaveImage(filename, self.cv_image, opt_val) then
