@@ -900,6 +900,8 @@ local function cv_object_detect(image, casc, find_biggest_object)
 	local rects = {}
 	local x_min, y_min, x_max, y_max, idx_x_max, idx_y_max
 	if faces and faces.total > 0 then
+		
+		local i
 		for i=0, (faces.total - 1) do
 			local rect = cv_get_seq_elem(faces, i)
 			rect = ffi.cast("CvRect *", rect)
@@ -1994,6 +1996,7 @@ function _M.overlay(self, src, x, y, w, h, alpha, gravity_mode)
 		local index_x = x < 0 and 0 or x
 		local index_y = y < 0 and 0 or y	
 
+		local i, j
 		for j = 0, src.cv_image.height, 1 do
 			for i = 0, src.cv_image.width, 1 do
 				if (src1_data[j*step1+i*4+3] > 200) then
