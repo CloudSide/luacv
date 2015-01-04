@@ -1908,90 +1908,23 @@ end
 function _M.overlay(self, src, x, y, w, h, alpha, gravity_mode)
 
 	if not self.cv_image or not src.cv_image then
-		return error("Failed to overlay image")
+		return error("ErrorFile")
 	else
-		local roi_rect = cv_get_image_roi(self.cv_image)
-		local o_w = roi_rect.width
-		local o_h = roi_rect.height
-		
-		local src_rect = cv_get_image_roi(src.cv_image)
-		local src_w = src_rect.width
-		local src_h = src_rect.height
-		
-		x = x or 0
-		y = y or 0
-		w = w or 0
-		h = h or 0
-		
-		local n_w, n_h
-		if w <= 0 then
-			if h <= 0 then
-				n_w = src_w
-				n_h = src_h
-			else
-				n_h = h
-				n_w = src_w*n_h/src_h
-			end
-		else
-			if h <= 0 then
-				n_w = w
-				n_h = n_w*src_h/src_w
-			else
-				n_w = w
-				n_h = h
-			end
-		end
-		
 		
 		if not gravity_mode then
 			gravity_mode = 'GRAVITY_NORTH_WEST'
 		end
 		
-		
-		x, y = cv_coord_gravity_to_image(self.cv_image, x, y, gravity_mode)
-		
-		local dest_width, dest_height, dst
-		
-		if x < 0 and y < 0 then
-			
-			dest_width = o_w - x
-			dest_height = o_h - y			
-			dst = cv_create_image(dest_width, dest_height, self.cv_image.depth, self.cv_image.nChannels)
-			cv_set(dst, cv_scalar(255,255,255,0))
-			cv_set_image_roi(dst, -x, -y, o_w, o_h)
-			
-		elseif x < 0 and y >= 0 then
-			
-			dest_width = o_w - x
-			dest_height = y + n_h > o_h and y + n_h or o_h
-			dst = cv_create_image(dest_width, dest_height, self.cv_image.depth, self.cv_image.nChannels)
-			cv_set(dst, cv_scalar(255,255,255,0))
-			cv_set_image_roi(dst, -x, 0, o_w, o_h)
-			
-		elseif x >= 0 and y < 0 then
-			
-			dest_width = x + n_w > o_w and x + n_w or o_w
-			dest_height = o_h - y
-			dst = cv_create_image(dest_width, dest_height, self.cv_image.depth, self.cv_image.nChannels)
-			cv_set(dst, cv_scalar(255,255,255,0))
-			cv_set_image_roi(dst, 0, -y, o_w, o_h)
-		else
-			dest_width = x + n_w > o_w and x + n_w or o_w
-			dest_height = y + n_h > o_h and y + n_h or o_h
-			dst = cv_create_image(dest_width, dest_height, self.cv_image.depth, self.cv_image.nChannels)
-			cv_set(dst, cv_scalar(255,255,255,0))
-			cv_set_image_roi(dst, 0, 0, o_w, o_h)
+		if not alpha then
+			alpha = 1
 		end
-		
-		cv_copy(self.cv_image, dst)
-		cv_reset_image_roi(dst)
-		src:resize(n_w, n_h, 'RESIZE_FIT', 'INTER_AREA')
 
+		x, y = self:overlay_canvas(x, y, w, h, gravity_mode, {255,0,255,255})
 
-		local src1_data = ffi.cast("unsigned char *",src.cv_image.imageData)
-		local step1 = src.cv_image.widthStep
-		local src2_data = ffi.cast("unsigned char *",dst.imageData)
-		local step2 = dst.widthStep
+		local src_data = ffi.cast("unsigned char *",src.cv_image.imageData)
+		local step = src.cv_image.widthStep
+		local self_data = ffi.cast("unsigned char *",self.cv_image.imageData)
+		local step_self = self.cv_image.widthStep
 		
 		local index_x = x < 0 and 0 or x
 		local index_y = y < 0 and 0 or y	
@@ -1999,38 +1932,91 @@ function _M.overlay(self, src, x, y, w, h, alpha, gravity_mode)
 		local i, j
 		for j = 0, src.cv_image.height, 1 do
 			for i = 0, src.cv_image.width, 1 do
-				if (src1_data[j*step1+i*4+3] > 200) then
-					src2_data[index_y*step2+index_x*4 + j*step2 + i*4 + 0] = src2_data[index_y*step2+index_x*4 + j*step2 + i*4 + 0] * (1-alpha) + src1_data[j*step1 + i*4 + 0] * alpha
-					src2_data[index_y*step2+index_x*4 + j*step2 + i*4 + 1] = src2_data[index_y*step2+index_x*4 + j*step2 + i*4 + 1] * (1-alpha) + src1_data[j*step1 + i*4 + 1] * alpha
-					src2_data[index_y*step2+index_x*4 + j*step2 + i*4 + 2] = src2_data[index_y*step2+index_x*4 + j*step2 + i*4 + 2] * (1-alpha) + src1_data[j*step1 + i*4 + 2] * alpha
-					src2_data[index_y*step2+index_x*4 + j*step2 + i*4 + 3] = src2_data[index_y*step2+index_x*4 + j*step2 + i*4 + 3] * (1-alpha) + src1_data[j*step1 + i*4 + 3] * alpha
+				if (src_data[j*step+i*4+3] > 200) then
+					self_data[index_y*step_self+index_x*4 + j*step_self + i*4 + 0] = self_data[index_y*step_self+index_x*4 + j*step_self + i*4 + 0] * (1-alpha) + src_data[j*step + i*4 + 0] * alpha
+					self_data[index_y*step_self+index_x*4 + j*step_self + i*4 + 1] = self_data[index_y*step_self+index_x*4 + j*step_self + i*4 + 1] * (1-alpha) + src_data[j*step + i*4 + 1] * alpha
+					self_data[index_y*step_self+index_x*4 + j*step_self + i*4 + 2] = self_data[index_y*step_self+index_x*4 + j*step_self + i*4 + 2] * (1-alpha) + src_data[j*step + i*4 + 2] * alpha
+					self_data[index_y*step_self+index_x*4 + j*step_self + i*4 + 3] = self_data[index_y*step_self+index_x*4 + j*step_self + i*4 + 3] * (1-alpha) + src_data[j*step + i*4 + 3] * alpha
 				end
 			end
 		end
-		
-		cv_release_image(self.cv_image)
-		self.cv_image = dst
 		
 		return
 	end
 end
 
-function _M.put_text(self, text, x, y, w, h, color, gravity_mode)
+function _M.overlay_canvas(self, x, y, w, h, gravity_mode, bg_color)
 
---	if not font_face then
---		font_face = "HERSHEY_SIMPLEX"
---	end
---	local font_face_val = font_face_op[font_face] or font_face_op["HERSHEY_SIMPLEX"]
---	hscale = hscale or 1
---	vscale = vscale or 1
---	shear = shear or 0
---	thickness = thickness or 1
---	if not line_type then
---		line_type = 'CONNECTION_8'
-	
-	local font = cv_init_font("HERSHEY_SCRIPT_COMPLEX", 5, 5, 0, 2, 'CV_AA')
-	local font_color = cv_scalar(color[1], color[2], color[3], color[4])
-	cv_put_text(self.cv_image, text, cv_point(x,y), font, font_color)
+	if not self.cv_image then
+		return error("ErrorFile")
+	else
+		local roi_rect = cv_get_image_roi(self.cv_image)
+		local o_w = roi_rect.width
+		local o_h = roi_rect.height
+
+		x = x or 0
+		y = y or 0
+		local n_w = w or 0
+		local n_h = h or 0
+		
+		n_w = n_w < 0 and 0 or n_w
+		n_h = n_h < 0 and 0 or n_h
+		
+		
+		if not gravity_mode then
+			gravity_mode = 'GRAVITY_NORTH_WEST'
+		end
+		
+		local background_color
+		if not bg_color then
+			background_color = cv_scalar(255, 255, 255, 0)
+		else
+			background_color = cv_scalar(bg_color[1], bg_color[2], bg_color[3], bg_color[4])
+		end
+		
+		x, y = cv_coord_gravity_to_image(self.cv_image, x, y, gravity_mode)
+		
+		local dest_width, dest_height
+		
+		
+		if x < 0 and y < 0 then
+					
+			dest_width = o_w - x
+			dest_height = o_h - y			
+			dst = cv_create_image(dest_width, dest_height, self.cv_image.depth, self.cv_image.nChannels)
+			cv_set(dst, background_color)
+			cv_set_image_roi(dst, -x, -y, o_w, o_h)
+			
+		elseif x < 0 and y >= 0 then
+			
+			dest_width = o_w - x
+			dest_height = y + n_h > o_h and y + n_h or o_h
+			dst = cv_create_image(dest_width, dest_height, self.cv_image.depth, self.cv_image.nChannels)
+			cv_set(dst, background_color)
+			cv_set_image_roi(dst, -x, 0, o_w, o_h)
+			
+		elseif x >= 0 and y < 0 then
+			
+			dest_width = x + n_w > o_w and x + n_w or o_w
+			dest_height = o_h - y
+			dst = cv_create_image(dest_width, dest_height, self.cv_image.depth, self.cv_image.nChannels)
+			cv_set(dst, background_color)
+			cv_set_image_roi(dst, 0, -y, o_w, o_h)
+		else
+			dest_width = x + n_w > o_w and x + n_w or o_w
+			dest_height = y + n_h > o_h and y + n_h or o_h
+			dst = cv_create_image(dest_width, dest_height, self.cv_image.depth, self.cv_image.nChannels)
+			cv_set(dst, background_color)
+			cv_set_image_roi(dst, 0, 0, o_w, o_h)
+		end
+		
+		cv_copy(self.cv_image, dst)
+		cv_reset_image_roi(dst)
+		cv_release_image(self.cv_image)
+		self.cv_image = dst
+		
+		return x, y
+	end
 
 end
 

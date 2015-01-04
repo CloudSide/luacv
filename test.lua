@@ -88,33 +88,10 @@ local aa = img:background_color({0,255,0,255})
 aa:save_image("files/test_round_corner.png")
 --]]
 
---[[
-
-
-local mgk2 = magick.load_image("files/alpha.png")
-local format2 = mgk2:get_format():lower()  
-if format2 == 'gif' then 
-	mgk2:set_first_iterator() 
-	mgk2:set_format('jpeg')
-end
-
-local w2 = mgk2:get_width()
-local h2 = mgk2:get_height()
-local src = luacv.create_image(w2, h2, 8, 4)                                                                                       
-mgk2:export_image_pixels(0, 0, w2, h2, 'BGRA', 'CharPixel', src:get_image_data()) 
-
-
-
-
---local src = luacv.load_image("files/alpha.png", 'UNCHANGED')
---local mask = luacv.load_image("files/alpha.png",'GRAYSCALE')
---print(mask.cv_image.nChannels)
+--[
+local src = luacv.load_image("files/alpha.png", 'UNCHANGED')
 image:overlay(src, -100, -100, 300, 300, 0.6, nil)
 image:save_image("files/test_overlay.png")
 --]]
-
-image:put_text('哈哈哈', 100, 300, 1000, 500, {255,0,0,255})
-image:save_image("files/test_put_text.png")
-
 
 image:release_image()
