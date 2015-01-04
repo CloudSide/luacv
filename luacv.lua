@@ -1447,6 +1447,14 @@ function _M.thumb(self, w, h, gravity_mode)
 	
 			x_roi, y_roi, faces_rect = cv_center_of_gravity(self.cv_image, gravity_mode)
 			
+			if faces_rect == nil then
+				if gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES_CENTER' then
+					return self:fill(n_w, n_h, nil, 'GRAVITY_CENTER')
+				else
+					return self:fill(n_w, n_h, nil, 'GRAVITY_NORTH')
+				end
+			end
+
 			if (n_w < faces_rect.width or n_h < faces_rect.height) then
 				
 				--self:fill(n_w, n_h, nil, gravity_mode)
@@ -1566,6 +1574,11 @@ function _M.crop(self, x, y, w, h, gravity_mode)
 			if (gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER') then
 				local h_roi, w_roi, x_roi, y_roi, faces_rect
 				x_roi, y_roi, faces_rect = cv_center_of_gravity(self.cv_image, gravity_mode)
+				
+				if faces_rect == nil then
+					return
+				end
+				
 				w_roi = faces_rect.width * 1.3
 				h_roi = w_roi/0.73
 				
