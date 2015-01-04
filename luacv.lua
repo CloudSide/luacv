@@ -1569,36 +1569,15 @@ function _M.crop(self, x, y, w, h, gravity_mode)
 		
 		local n_w, n_h
 		
-		if (x == nil and y == nil and w == nil and h == nil) then
-			
-			if (gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER') then
-				local h_roi, w_roi, x_roi, y_roi, faces_rect
-				x_roi, y_roi, faces_rect = cv_center_of_gravity(self.cv_image, gravity_mode)
-				
-				if faces_rect == nil then
-					return
-				end
-				
-				w_roi = faces_rect.width * 1.3
-				h_roi = w_roi/0.73
-				
-				self:set_image_roi(x_roi-w_roi/2, y_roi-h_roi/2, w_roi, h_roi)
-				local rect = cv_get_image_roi(self.cv_image)
-				local dst = cv_create_image(rect.width, rect.height, self.cv_image.depth, self.cv_image.nChannels)
-				cv_copy(self.cv_image, dst)
-				cv_release_image(self.cv_image)
-				self.cv_image = dst
-				return
-			else
-				return
-			end
-			
-		elseif (x == nil and y == nil) then
+		if (w or h) then
+			w = w or 0
+			h = h or 0
 			
 			if w <= 0 then
 				if h <= 0 then
 					n_w = o_w
 					n_h = o_h
+					print(n_w,n_h)
 				else
 					n_h = h
 					n_w = o_w*n_h/o_h
@@ -1612,41 +1591,43 @@ function _M.crop(self, x, y, w, h, gravity_mode)
 					n_h = h
 				end
 			end
-			
-			local x_roi, y_roi
-			x_roi, y_roi = cv_center_of_gravity(self.cv_image, gravity_mode)
-			
-			if x_roi == 0 then x_roi = 0
-			elseif x_roi == o_w then x_roi = x_roi - n_w
-			else x_roi = x_roi - n_w/2
-			end
-			
-			if y_roi == 0 then y_roi = 0
-			elseif y_roi == o_h then y_roi = y_roi - n_h
-			else y_roi = y_roi - n_h/2
-			end
-			
-			self:set_image_roi(x_roi, y_roi, n_w, n_h)
-			local rect = cv_get_image_roi(self.cv_image)
-			local dst = cv_create_image(rect.width, rect.height, self.cv_image.depth, self.cv_image.nChannels)
-			cv_copy(self.cv_image, dst)
-			cv_release_image(self.cv_image)
-			self.cv_image = dst
-			
-			return
-			
-		elseif (w == nil and h == nil) then
-			
-			return
-			
-		else
+		end
 		
-			if (x >= o_w or y >= o_h or x + n_w < 1 or y + n_h < 1) then
+		
+		
+		if (x or y) then
+			
+			x = x or 0
+			y = y or 0
+			
+			if n_w == nil then
+				return
+			else
+			
+				if (x >= o_w or y >= o_h or x + n_w < 1 or y + n_h < 1) then
+					
+					x = 0
+					y = 0
+					n_w = 1
+					n_h = 1
+					
+					self:set_image_roi(x, y, n_w, n_h)
+					local rect = cv_get_image_roi(self.cv_image)
+					local dst = cv_create_image(rect.width, rect.height, self.cv_image.depth, self.cv_image.nChannels)
+					cv_copy(self.cv_image, dst)
+					cv_release_image(self.cv_image)
+					self.cv_image = dst
+					
+					return
+				end
 				
-				x = 0
-				y = 0
-				n_w = 1
-				n_h = 1
+				if gravity_mode == 'GRAVITY_XY_CENTER' then
+					x = x - n_w/2 > 0 and x - n_w/2 or 0
+					y = y - n_h/2 > 0 and y - n_h/2 or 0
+				else
+					x = x < 0 and 0 or x
+					y = y < 0 and 0 or y
+				end
 				
 				self:set_image_roi(x, y, n_w, n_h)
 				local rect = cv_get_image_roi(self.cv_image)
@@ -1656,48 +1637,60 @@ function _M.crop(self, x, y, w, h, gravity_mode)
 				self.cv_image = dst
 				
 				return
-				
 			end
 			
-			x = x or 0
-			y = y or 0
-			
-			if w <= 0 then
-				if h <= 0 then
-					n_w = o_w
-					n_h = o_h
-				else
-					n_h = h
-					n_w = o_w*n_h/o_h
-				end
-			else
-				if h <= 0 then
-					n_w = w
-					n_h = n_w*o_h/o_w
-				else
-					n_w = w
-					n_h = h
-				end
-			end
-			
-			if gravity_mode == 'GRAVITY_XY_CENTER' then
-				x = x - n_w/2 > 0 and x - n_w/2 or 0
-				y = y - n_h/2 > 0 and y - n_h/2 or 0
-			else
-				x = x < 0 and 0 or x
-				y = y < 0 and 0 or y
-			end
-			
-			self:set_image_roi(x, y, n_w, n_h)
-			local rect = cv_get_image_roi(self.cv_image)
-			local dst = cv_create_image(rect.width, rect.height, self.cv_image.depth, self.cv_image.nChannels)
-			cv_copy(self.cv_image, dst)
-			cv_release_image(self.cv_image)
-			self.cv_image = dst
-			
-			return
-		end				
+		else
 		
+			if n_w == nil then
+				
+				if (gravity_mode == 'GRAVITY_FACE' or gravity_mode == 'GRAVITY_FACE_CENTER' or gravity_mode == 'GRAVITY_FACES' or gravity_mode == 'GRAVITY_FACES_CENTER') then
+					local h_roi, w_roi, x_roi, y_roi, faces_rect
+					x_roi, y_roi, faces_rect = cv_center_of_gravity(self.cv_image, gravity_mode)
+					
+					if faces_rect == nil then
+						return
+					end
+					
+					w_roi = faces_rect.width * 1.3
+					h_roi = w_roi/0.73
+					
+					self:set_image_roi(x_roi-w_roi/2, y_roi-h_roi/2, w_roi, h_roi)
+					local rect = cv_get_image_roi(self.cv_image)
+					local dst = cv_create_image(rect.width, rect.height, self.cv_image.depth, self.cv_image.nChannels)
+					cv_copy(self.cv_image, dst)
+					cv_release_image(self.cv_image)
+					self.cv_image = dst
+					return
+				else
+					return
+				end
+				
+			else
+				
+				local x_roi, y_roi
+				x_roi, y_roi = cv_center_of_gravity(self.cv_image, gravity_mode)
+				
+				if x_roi == 0 then x_roi = 0
+				elseif x_roi == o_w then x_roi = x_roi - n_w
+				else x_roi = x_roi - n_w/2
+				end
+				
+				if y_roi == 0 then y_roi = 0
+				elseif y_roi == o_h then y_roi = y_roi - n_h
+				else y_roi = y_roi - n_h/2
+				end
+				
+				self:set_image_roi(x_roi, y_roi, n_w, n_h)
+				local rect = cv_get_image_roi(self.cv_image)
+				local dst = cv_create_image(rect.width, rect.height, self.cv_image.depth, self.cv_image.nChannels)
+				cv_copy(self.cv_image, dst)
+				cv_release_image(self.cv_image)
+				self.cv_image = dst
+				
+				return
+			end
+			
+		end
 	end
 	
 	return

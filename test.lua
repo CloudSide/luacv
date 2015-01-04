@@ -3,7 +3,7 @@ local magick = require "magick"
 
 
 --local mgk = magick.load_image("files/yanshi_2.jpg")
-local mgk = magick.load_image("files/test_3.png") --face-detection.png
+local mgk = magick.load_image("files/yanshi.jpg") --face-detection.png
 local format = mgk:get_format():lower()  
 if format == 'gif' then 
 	mgk:set_first_iterator() 
@@ -62,13 +62,13 @@ image:fill(image.cv_image.width*0.99999, 640, 'FILL_DEFAULT', 'GRAVITY_FACES')
 image:save_image("files/test_fill.jpg")
 --]]
 
---[
+--[[
 image:thumb(50, 50, 'GRAVITY_FACES')
 image:save_image("files/test_thumb.jpg")
 --]]
 
---[[
-image:crop(nil, nil, 300, 200, 'GRAVITY_EAST')
+--[
+image:crop(nil, nil, 500, 100, 'GRAVITY_FACE')
 image:save_image("files/test_crop.jpg")
 --]]
 
