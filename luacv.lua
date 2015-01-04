@@ -1569,6 +1569,10 @@ function _M.crop(self, x, y, w, h, gravity_mode)
 		
 		local n_w, n_h
 		
+		if (w and w < 0) or (h and h < 0) then
+			return
+		end
+		
 		if (w or h) then
 			w = w or 0
 			h = h or 0
