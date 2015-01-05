@@ -1581,7 +1581,6 @@ function _M.crop(self, x, y, w, h, gravity_mode)
 				if h <= 0 then
 					n_w = o_w
 					n_h = o_h
-					print(n_w,n_h)
 				else
 					n_h = h
 					n_w = o_w*n_h/o_h
