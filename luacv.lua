@@ -1004,24 +1004,36 @@ local function cv_center_of_gravity(image, gravity_mode)
 	return x, y, faces_rect
 end
 
-local function cv_coord_gravity_to_image(image, x, y, gravity_mode)
+local function cv_coord_gravity_to_image(image, x, y, gravity_mode, w, h)
 
 	x = x or 0
 	y = y or 0
 	gravity_mode = gravity_mode or 'GRAVITY_NORTH_WEST'
+	w = w or 0
+	h = h or 0
 	
 	local ox, oy, face_rect, ix, iy
 	ox, oy, face_rect= cv_center_of_gravity(image, gravity_mode)
 	
 	if not (face_rect == nil) then
-		ix = ox + x
-		iy = oy + y
+		ix = ox + x - w / 2
+		iy = oy + y - h / 2
 	else
-		if not (ox == image.width) then ix = ox + x
-		else ix = ox - x
+		if ox == image.width then 
+			ix = ox - x - w
+		elseif ox == 0 then
+			ix = ox + x
+		else
+			ix = ox + x - w / 2
 		end
-		if not (oy == image.height) then iy = oy + y
-		else iy = oy - y
+		
+		
+		if oy == image.height then 
+			iy = oy - y - h
+		elseif oy == 0 then
+			iy = oy - y
+		else
+			iy = oy + y - h / 2
 		end
 	end
 	
@@ -1914,7 +1926,7 @@ local function printf(...)
 	print(string.format(...))
 end
 
-function _M.overlay(self, src, x, y, w, h, alpha, gravity_mode)
+function _M.overlay(self, src, x, y, w, h, alpha, gravity_mode, bg_color)
 
 	if not self.cv_image or not src.cv_image then
 		return error("ErrorFile")
@@ -1928,7 +1940,13 @@ function _M.overlay(self, src, x, y, w, h, alpha, gravity_mode)
 			alpha = 1
 		end
 
-		x, y = self:overlay_canvas(x, y, w, h, gravity_mode, {255,0,255,255})
+		w = w or 0
+		h = h or 0
+		
+		w = (w == src.cv_image.width) and w or src.cv_image.width
+		h = (h == src.cv_image.height) and h or src.cv_image.height
+		
+		x, y = self:overlay_canvas(x, y, w, h, gravity_mode, bg_color)
 
 		local src_data = ffi.cast("unsigned char *",src.cv_image.imageData)
 		local step = src.cv_image.widthStep
@@ -1983,7 +2001,7 @@ function _M.overlay_canvas(self, x, y, w, h, gravity_mode, bg_color)
 			background_color = cv_scalar(bg_color[1], bg_color[2], bg_color[3], bg_color[4])
 		end
 		
-		x, y = cv_coord_gravity_to_image(self.cv_image, x, y, gravity_mode)
+		x, y = cv_coord_gravity_to_image(self.cv_image, x, y, gravity_mode, n_w, n_h)
 		
 		local dest_width, dest_height
 		

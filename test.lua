@@ -67,7 +67,7 @@ image:thumb(50, 50, 'GRAVITY_FACES')
 image:save_image("files/test_thumb.jpg")
 --]]
 
---[
+--[[
 image:crop(nil, nil, 500, 100, 'GRAVITY_FACE')
 image:save_image("files/test_crop.jpg")
 --]]
@@ -88,9 +88,9 @@ local aa = img:background_color({0,255,0,255})
 aa:save_image("files/test_round_corner.png")
 --]]
 
---[[
+--[
 local src = luacv.load_image("files/alpha.png", 'UNCHANGED')
-image:overlay(src, -100, -100, 300, 300, 0.6, nil)
+image:overlay(src, -300, 0, 300, 300, 0.6, 'GRAVITY_SOUTH_WEST')
 image:save_image("files/test_overlay.png")
 --]]
 
