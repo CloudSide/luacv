@@ -1031,7 +1031,7 @@ local function cv_coord_gravity_to_image(image, x, y, gravity_mode, w, h)
 		if oy == image.height then 
 			iy = oy - y - h
 		elseif oy == 0 then
-			iy = oy - y
+			iy = oy + y
 		else
 			iy = oy + y - h / 2
 		end
@@ -2041,6 +2041,9 @@ function _M.overlay_canvas(self, x, y, w, h, gravity_mode, bg_color)
 		cv_reset_image_roi(dst)
 		cv_release_image(self.cv_image)
 		self.cv_image = dst
+		
+		x = x < 0 and 0 or x
+		y = y < 0 and 0 or y	
 		
 		return x, y
 	end

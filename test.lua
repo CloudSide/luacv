@@ -3,7 +3,7 @@ local magick = require "magick"
 
 
 --local mgk = magick.load_image("files/yanshi_2.jpg")
-local mgk = magick.load_image("files/yanshi.jpg") --face-detection.png
+local mgk = magick.load_image("files/5M.jpeg") --face-detection.png
 local format = mgk:get_format():lower()  
 if format == 'gif' then 
 	mgk:set_first_iterator() 
@@ -68,7 +68,7 @@ image:save_image("files/test_thumb.jpg")
 --]]
 
 --[[
-image:crop(nil, nil, 500, 100, 'GRAVITY_FACE')
+image:crop(1000, 400, 500, 100, nil)
 image:save_image("files/test_crop.jpg")
 --]]
 
@@ -90,7 +90,7 @@ aa:save_image("files/test_round_corner.png")
 
 --[
 local src = luacv.load_image("files/alpha.png", 'UNCHANGED')
-image:overlay(src, -300, 0, 300, 300, 0.6, 'GRAVITY_SOUTH_WEST')
+image:overlay(src, 100, -100, 300, 300, 0.6)
 image:save_image("files/test_overlay.png")
 --]]
 
