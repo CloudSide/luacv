@@ -208,7 +208,7 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
     char *text = str;
     long num_chars = strlen(text);
     int text_size = font.font_size;
-    float text_lean = font.font_lean;
+    float text_lean = font.font_lean >= 0 ? font.font_lean : abs(font.font_lean);
     float text_kerning = font.text_kerning;
     float word_spacing = font.word_spacing;
     float line_spacing = font.line_spacing;
@@ -245,6 +245,10 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
             int a = 0;
             step = convert_unicode(text+n, &a);
             
+            if (step == -1) {
+                break;
+            }
+            
             if (a == 10 || a == 13) {
                 
                 if (a == 32) {
@@ -269,15 +273,10 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
             }else {
                 pen.x += slot->advance.x * text_kerning;
             }
-            
             num_text++;
-            
-            if (step == -1) {
-                break;
-            }
         }
         
-        long raw_w = pen.x + slot->advance.x > tmp_w ? pen.x + slot->advance.x : tmp_w;
+        long raw_w = pen.x > tmp_w ? pen.x : tmp_w;
         long raw_h = tmp_h * 1.15;
         raw_w /= 64;
         
@@ -286,9 +285,12 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
             im_w = (int)raw_w;
             im_h = (int)raw_h;
             
+            im_w += text_size * text_lean;
+            
         }else if (mode_w_all) {
             
-            int num_text_per_line = im_w / text_size;
+            int num_text_per_line = (im_w - text_size * text_lean) / text_size;
+            num_text_per_line = num_text_per_line <= 0 ? 1 : num_text_per_line;
             int num_line = 0;
             num_line = num_text / num_text_per_line;
             num_line += (num_text % num_text_per_line > 0);
@@ -337,6 +339,9 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
         int a = 0;
         step = convert_unicode(text+n, &a);
         
+        if (step == -1) {
+            break;
+        }
         
         if (a == 10 || a == 13) {
             pen.x = 0;
@@ -344,7 +349,7 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
             continue;
         }else if (a == 9) {
             pen.x += text_size * 0.5 * word_spacing * 4 * 64;
-            if (pen.x + slot->advance.x * word_spacing * (1+text_lean) >= im_w * 64) {
+            if (pen.x + slot->advance.x * word_spacing >= (im_w - text_size * text_lean) * 64) {
                 pen.x = 0;
                 pen.y -= text_size * line_spacing * 64;
             }
@@ -357,20 +362,16 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
         
         if (a == 32) {
             pen.x += slot->advance.x * word_spacing;
-            if (pen.x + slot->advance.x * word_spacing * (1+text_lean) > im_w * 64) {
+            if (pen.x + slot->advance.x * word_spacing > (im_w - text_size * text_lean) * 64) {
                 pen.x = 0;
                 pen.y -= text_size * line_spacing * 64;
             }
         }else {
             pen.x += slot->advance.x * text_kerning;
-            if (pen.x + slot->advance.x * text_kerning * (1+text_lean) > im_w * 64) {
+            if (pen.x + slot->advance.x * text_kerning > (im_w - text_size * text_lean) * 64) {
                 pen.x = 0;
                 pen.y -= text_size * line_spacing * 64;
             }
-        }
-        
-        if (step == -1) {
-            break;
         }
     }
     

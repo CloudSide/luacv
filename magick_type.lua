@@ -53,20 +53,26 @@ local _M = {
 
 local metatable = { __index = _M }
 
+local font_face_opt = {
+	['楷体'] = "Kaiti.ttf",
+	['微软雅黑'] = "Microsoft Yahei.ttf"
+}
+
+local font_path_prefix = "src/lib/data/font/"
+
+local function _font_face(face)
+	local font_path = font_face_opt[face] or font_face_opt['楷体']
+	return font_path_prefix .. font_path
+end
+
 function _M.MT(self, font, font_face)
 	return setmetatable({ font = font, font_face = font_face, mt_image = nil}, metatable)
 end
 
 
-local font_face_opt = {
-	['KAITI'] = "/luacv/Kaiti.ttf",
-}
-
-
 function _M.new(font_face)
 	local font = lib.new_font()
-	local font_face_path = font_face_opt[font_face] or font_face_opt['KAITI']
-	return _M:MT(font, font_face_path)
+	return _M:MT(font, _font_face(font_face))
 end
 
 function _M.destroy(self)
