@@ -2008,15 +2008,15 @@ function _M.overlay_canvas(self, x, y, w, h, gravity_mode, bg_color)
 		
 		if x < 0 and y < 0 then
 					
-			dest_width = o_w - x
-			dest_height = o_h - y			
+			dest_width = o_w - x < n_w and n_w or o_w - x
+			dest_height = o_h - y < n_h and n_h or o_h - y
 			dst = cv_create_image(dest_width, dest_height, self.cv_image.depth, self.cv_image.nChannels)
 			cv_set(dst, background_color)
 			cv_set_image_roi(dst, -x, -y, o_w, o_h)
 			
 		elseif x < 0 and y >= 0 then
 			
-			dest_width = o_w - x
+			dest_width = o_w - x < n_w and n_w or o_w - x
 			dest_height = y + n_h > o_h and y + n_h or o_h
 			dst = cv_create_image(dest_width, dest_height, self.cv_image.depth, self.cv_image.nChannels)
 			cv_set(dst, background_color)
@@ -2025,7 +2025,7 @@ function _M.overlay_canvas(self, x, y, w, h, gravity_mode, bg_color)
 		elseif x >= 0 and y < 0 then
 			
 			dest_width = x + n_w > o_w and x + n_w or o_w
-			dest_height = o_h - y
+			dest_height = o_h - y < n_h and n_h or o_h - y
 			dst = cv_create_image(dest_width, dest_height, self.cv_image.depth, self.cv_image.nChannels)
 			cv_set(dst, background_color)
 			cv_set_image_roi(dst, 0, -y, o_w, o_h)

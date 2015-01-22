@@ -3,7 +3,7 @@ local magick = require "magick"
 
 
 --local mgk = magick.load_image("files/yanshi_2.jpg")
-local mgk = magick.load_image("files/5M.jpeg") --face-detection.png
+local mgk = magick.load_image("files/zuo.jpg") --face-detection.png
 local format = mgk:get_format():lower()  
 if format == 'gif' then 
 	mgk:set_first_iterator() 
@@ -89,9 +89,9 @@ aa:save_image("files/test_round_corner.png")
 --]]
 
 --[
-local src = luacv.load_image("files/alpha.png", 'UNCHANGED')
-image:overlay(src, 100, -100, 300, 300, 0.6)
-image:save_image("files/test_overlay.png")
+--local src = luacv.load_image("files/alpha.png", 'UNCHANGED')
+image:overlay_canvas(20, -20, 200, 1800, nil, {255,0,0,255})
+image:save_image("files/test_overlay_canvas.png")
 --]]
 
 image:release_image()
