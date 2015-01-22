@@ -43,7 +43,7 @@ void destroy_image(MT_Image *image);
 
 int convert_unicode(char *str, int *code);
 
-MT_Image *str_to_image(char *str, int im_w, int im_h, char *font_name, MT_Font font, int resolution, int channels);
+MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_Font font, int resolution, int channels);
 
 ]])
 
@@ -59,7 +59,7 @@ end
 
 
 local font_face_opt = {
-	['KAITI'] = "/Library/Fonts/Microsoft/Kaiti.ttf",
+	['KAITI'] = "/luacv/Kaiti.ttf",
 }
 
 
@@ -115,6 +115,10 @@ function _M.set_font(self, size, color, lean, kerning, word_spacing, line_spacin
 end
 
 function _M.draw_text(self, text, w, h)
+
+	text = text or ""
+	w = w or -1
+	h = h or -1
 	
 	local font_face = ffi.cast("char *", self.font_face)
 	self.mt_image = lib.str_to_image(text, w, h, font_face, self.font[0], 72, 4)
