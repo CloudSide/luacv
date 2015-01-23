@@ -45,6 +45,8 @@ int convert_unicode(char *str, int *code);
 
 MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_Font font, int resolution, int channels);
 
+void unpack_font(const char *font_name, void *lua_function(char *family_name, char *style_name, int index));
+
 ]])
 
 local _M = {
@@ -55,7 +57,8 @@ local metatable = { __index = _M }
 
 local font_face_opt = {
 	['楷体'] = "Kaiti.ttf",
-	['微软雅黑'] = "Microsoft Yahei.ttf"
+	['微软雅黑'] = "Microsoft Yahei.ttf",
+	['宋体-简'] = "Songti.ttc"
 }
 
 local font_path_prefix = "src/lib/data/font/"
@@ -120,7 +123,7 @@ function _M.set_font(self, size, color, lean, kerning, word_spacing, line_spacin
 	end
 end
 
-function _M.draw_text(self, text, w, h)
+function _M.draw_text(self, text, w, h)                                   
 
 	text = text or ""
 	w = w or -1
@@ -130,6 +133,22 @@ function _M.draw_text(self, text, w, h)
 	self.mt_image = lib.str_to_image(text, w, h, font_face, self.font[0], 72, 4)
 end
 
+function _M.unpack_font(self)
 
+	local font_face = ffi.cast("char *", self.font_face)
+	
+	local font_table = {}
+	
+	lib.unpack_font(font_face, function (family_name, style_name, index)
+		
+		if font_table[ffi.string(family_name)] == nil then
+			font_table[ffi.string(family_name)] = {}
+		end
+		font_table[ffi.string(family_name)][ffi.string(style_name)] = index
+		
+	end)
+	
+	return font_table
+end
 
 return _M
