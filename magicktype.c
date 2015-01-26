@@ -106,6 +106,8 @@ MT_Font *new_font() {
     font->word_spacing = 1;
     MT_Font_Color *color = new_font_color(0,0,0,0);
     font->font_color = color;
+    font->font_style = MT_font_style_normal;
+    font->font_file_index = 0;
     return font;
 }
 
@@ -171,6 +173,26 @@ void show_image(unsigned char * image, int w, int h)
     }
 }
 
+void unpack_font(const char *font_name, void *lua_function(char *family_name, char *style_name, int index)) {
+    
+    FT_Library    library;
+    FT_Face       face;
+    
+    FT_Init_FreeType( &library);
+    FT_New_Face(library, font_name, 0, &face);
+    int face_num = (int)face->num_faces;
+    FT_Done_Face(face);
+    
+    int i;
+    for (i=0; i<face_num; i++) {
+        FT_New_Face(library, font_name, i, &face);
+        lua_function(face->family_name, face->style_name, i);
+        FT_Done_Face(face);
+    }
+    
+    FT_Done_FreeType(library);
+}
+
 MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_Font font, int resolution, int channels) {
     
     if (str == NULL || font_name == NULL) {
@@ -216,7 +238,7 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
     
     
     error = FT_Init_FreeType( &library );
-    error = FT_New_Face(library, filename, 0, &face);
+    error = FT_New_Face(library, filename, font.font_file_index, &face);
     error = FT_Set_Char_Size(face, text_size * 64, 0, resolution, resolution);
     slot = face->glyph;
     
