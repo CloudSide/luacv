@@ -73,7 +73,7 @@ local font_style_opt = {
 
 local font_path_prefix = "src/lib/data/font/"
 local font_table = nil
-local font_face_defult = "KaiTi"
+local font_family_defult = "Songti SC"
 
 --Bruce add
 function get_font_list()
@@ -122,16 +122,16 @@ function unpack_font()
 	return font_table
 end
 
-local function _font_face(face)
+local function _font_face(family)
 	
 	if font_table == nil then
 		font_table = unpack_font()
 	end
 
-	if font_table[face] then
-		return face
+	if font_table[family] then
+		return family
 	else
-		return print("No such font")
+		return font_family_defult
 	end
 end
 
@@ -175,7 +175,7 @@ function _M.new(font_face)
 	local font = lib.new_font()
 	
 	if font_face == nil then
-		font_face = font_face_defult
+		font_face = font_family_defult
 	end
 	
 	return _M:MT(font, _font_face(font_face))
@@ -283,14 +283,23 @@ function _M.set_font(self, size, color, style, lean, kerning, word_spacing, line
 	end
 end
 
-function _M.draw_text(self, text, w, h)               
+
+function _M.draw_text(self, text, w, h, channels)               
 
 	text = text or ""
 	w = w or -1
 	h = h or -1
 	
+	if channels == nil then
+		channels = 4
+	else
+		if channels ~= 1 then
+			channels = 4
+		end
+	end
+	
 	local font_face = ffi.cast("char *", font_table[self.font_face]["font_path"])
-	self.mt_image = lib.str_to_image(text, w, h, font_face, self.font[0], 72, 4)
+	self.mt_image = lib.str_to_image(text, w, h, font_face, self.font[0], 72, channels)
 end
 
 return _M
