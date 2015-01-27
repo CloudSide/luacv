@@ -1,9 +1,6 @@
-local VERSION = "1.0.0"
 local ffi = require("ffi")
-local lib = ffi.load'magicktype'
-
-require'io'
-local fs = require'fs'
+local lib = ffi.load 'magicktype'
+local fs = require 'fs'
 
 ffi.cdef([[  
 
@@ -71,21 +68,12 @@ local font_style_opt = {
 	["MT_font_style_light"] = 3,
 }
 
-local font_path_prefix = "src/lib/data/font/"
+local font_path_prefix = "src/lib/data/fonts/"
 local font_table = nil
 local font_family_defult = "Songti SC"
 
---Bruce add
 function get_font_list()
 	local filenames = fs.read_dir(font_path_prefix)
-	
---	print(filenames)
---	
---	local key,val
---	for key,val in pairs(filenames) do
---		print(val)
---	end
-	
 	return filenames
 end
 
@@ -95,11 +83,15 @@ function unpack_font()
 
 	local font_list = get_font_list()
 	
+	if not font_list then
+		return {}
+	end
+	
 	local i, filename
 	
-	for i,filename in pairs(font_list) do
+	for i, filename in pairs(font_list) do
 
-		if filename ~= ".DS_Store" then
+		if filename ~= ".DS_Store" or filename ~= '.gitignore' or filename ~= '.svn' then
 			
 			local font_face = ffi.cast("char *", font_path_prefix .. filename)
 			
