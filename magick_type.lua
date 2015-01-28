@@ -49,7 +49,7 @@ void destroy_image(MT_Image *image);
 
 int convert_unicode(char *str, int *code);
 
-MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_Font font, int resolution, int channels);
+MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_Font font, int resolution, int channels, int *err);
 
 void unpack_font(const char *font_name, void *lua_function(char *family_name, char *style_name, int index));
 
@@ -203,8 +203,11 @@ function _M.set_font(self, size, color, style, lean, kerning, word_spacing, line
 	
 	
 	style = style or "MT_font_style_normal"
-	
 	self.font.font_style = font_style_opt[style] or font_style_opt["MT_font_style_normal"]
+	
+	if font_table[self.font_face] == nil then
+		self.font_face = font_family_defult
+	end
 	
 	if style == "MT_font_style_normal" then
 		
@@ -291,7 +294,10 @@ function _M.draw_text(self, text, w, h, channels)
 	end
 	
 	local font_face = ffi.cast("char *", font_table[self.font_face]["font_path"])
-	self.mt_image = lib.str_to_image(text, w, h, font_face, self.font[0], 72, channels)
+	local err = ffi.new("int[1]")
+	self.mt_image = lib.str_to_image(text, w, h, font_face, self.font[0], 72, channels, err)
+	
+	return err[0]
 end
 
 return _M

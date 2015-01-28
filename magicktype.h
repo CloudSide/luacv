@@ -56,7 +56,7 @@ void destroy_image(MT_Image *image);
 
 int convert_unicode(char *str, int *code);
 
-MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_Font font, int resolution, int channels);
+MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_Font font, int resolution, int channels, int *err);
 
 void unpack_font(const char *font_name, void *lua_function(char *family_name, char *style_name, int index));
 

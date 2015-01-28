@@ -84,6 +84,11 @@ int convert_unicode(char *str, int *code)
 
 MT_Font_Color *new_font_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
     MT_Font_Color *font_color = (MT_Font_Color *)malloc(sizeof(MT_Font_Color));
+    
+    if (font_color == NULL) {
+        return NULL;
+    }
+    
     font_color->r = r;
     font_color->g = g;
     font_color->b = b;
@@ -99,6 +104,11 @@ void destroy_font_color(MT_Font_Color *font_color) {
 
 MT_Font *new_font() {
     MT_Font *font = (MT_Font *)malloc(sizeof(MT_Font));
+    
+    if (font == NULL) {
+        return NULL;
+    }
+    
     font->font_size = 14;
     font->text_kerning = 1;
     font->line_spacing = 1;
@@ -122,6 +132,9 @@ void destroy_font(MT_Font *font) {
 
 MT_Image *new_image() {
     MT_Image *image = (MT_Image *)malloc(sizeof(MT_Image));
+    if (image == NULL) {
+        return NULL;
+    }
     image->im_w = 0;
     image->im_h = 0;
     image->image_data = NULL;
@@ -174,18 +187,38 @@ void show_image(unsigned char * image, int w, int h)
 }
 
 void unpack_font(const char *font_name, void *lua_function(char *family_name, char *style_name, int index)) {
+
+    FT_Library      library = NULL;
+    FT_Face         face = NULL;
+    FT_Error        err;
     
-    FT_Library    library;
-    FT_Face       face;
+    err = FT_Init_FreeType( &library);
+
+    if (err != 0) {
+		if (library != NULL)  FT_Done_FreeType(library);
+        	return;
+    }
     
-    FT_Init_FreeType( &library);
-    FT_New_Face(library, font_name, 0, &face);
+    err = FT_New_Face(library, font_name, 0, &face);
+	
+    if (err != 0) {
+		if (face != NULL) FT_Done_Face(face);
+        	return;
+    }
+    
     int face_num = (int)face->num_faces;
     FT_Done_Face(face);
     
     int i;
     for (i=0; i<face_num; i++) {
-        FT_New_Face(library, font_name, i, &face);
+        
+        err = FT_New_Face(library, font_name, i, &face);
+        
+        if (err != 0) {
+            if (face != NULL) FT_Done_Face(face);
+            continue;
+        }
+        
         lua_function(face->family_name, face->style_name, i);
         FT_Done_Face(face);
     }
@@ -193,10 +226,13 @@ void unpack_font(const char *font_name, void *lua_function(char *family_name, ch
     FT_Done_FreeType(library);
 }
 
-MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_Font font, int resolution, int channels) {
-    
+MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_Font font, int resolution, int channels, int *err) {
+	
+	*err = 0;    
+
     if (str == NULL || font_name == NULL) {
-        return NULL;
+		*err = -1;
+        	return NULL;
     }
     
     if (channels != 1 && channels != 4) {
@@ -236,10 +272,36 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
     float line_spacing = font.line_spacing;
     MT_Image *mt_image = (MT_Image *)malloc(sizeof(MT_Image));
     
+    if (mt_image == NULL) {
+        *err = -1;
+        return NULL;
+    }
+    
     
     error = FT_Init_FreeType( &library );
+    if (error != 0) {
+        if (library != NULL) FT_Done_FreeType(library);
+        *err = error;
+        return mt_image;
+    }
+    
     error = FT_New_Face(library, filename, font.font_file_index, &face);
+    if (error != 0) {
+        if (library != NULL) FT_Done_FreeType(library);
+        if (face != NULL) FT_Done_Face(face);
+        *err = error;
+        return mt_image;
+    }
+    
     error = FT_Set_Char_Size(face, text_size * 64, 0, resolution, resolution);
+    if (error != 0) {
+        if (library != NULL) FT_Done_FreeType(library);
+        if (face != NULL) FT_Done_Face(face);
+        *err = error;
+        return mt_image;
+    }
+    
+    
     slot = face->glyph;
     
     int num_text = 0;
@@ -327,6 +389,12 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
     mt_image->im_h = im_h;
     
     unsigned char *image = (unsigned char *)malloc(im_w * im_h * channels *sizeof(unsigned char));
+    
+    if (image == NULL) {
+        *err = -1;
+        return mt_image;
+    }
+    
     if (channels == 1) {
         memset(image, 0, im_w * im_h);
     }else {
