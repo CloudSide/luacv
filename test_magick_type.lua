@@ -1,5 +1,6 @@
 --编译C文件
 --gcc -shared magicktype.c -o libmagicktype.so `freetype-config --cflags --libs` -fPIC
+--ldconfig /usr/local/lib
 
 
 local ffi = require'ffi'
