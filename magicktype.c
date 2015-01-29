@@ -320,66 +320,104 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
         long tmp_w = 0;
         long tmp_h = text_size;
         int n;
-        
-        for (n = 0; n < num_chars; n+=step ) {
-            
-            FT_Set_Transform( face, &matrix, &pen );
-            FT_Select_Charmap(face, FT_ENCODING_UNICODE);
-            
-            int a = 0;
-            step = convert_unicode(text+n, &a);
-            
-            if (step == -1) {
-                break;
-            }
-            
-            if (a == 10 || a == 13) {
-                
-                if (a == 32) {
-                    tmp_w = pen.x + slot->advance.x * word_spacing > tmp_w ? pen.x + slot->advance.x * word_spacing : tmp_w;
-                }else {
-                    tmp_w = pen.x + slot->advance.x * text_kerning > tmp_w ? pen.x + slot->advance.x * text_kerning : tmp_w;
-                }
-                
-                pen.x = 0;
-                pen.y -= text_size * line_spacing * 64;
-                tmp_h += text_size * line_spacing;
-                continue;
-            }else if (a == 9) {
-                pen.x += text_size * 0.5 * word_spacing * 4 * 64;
-                continue;
-            }
-            
-            error = FT_Load_Char(face, a, FT_LOAD_RENDER);
-            
-            if (a == 32) {
-                pen.x += slot->advance.x * word_spacing;
-            }else {
-                pen.x += slot->advance.x * text_kerning;
-            }
-            num_text++;
-        }
-        
-        long raw_w = pen.x > tmp_w ? pen.x : tmp_w;
-        long raw_h = tmp_h * 1.15;
-        raw_w /= 64;
+		int line_num = 1;
         
         if (mode_all_all || mode_all_h) {
-            
+
+		 	for (n = 0; n < num_chars; n+=step ) {
+	            
+	            FT_Set_Transform( face, &matrix, &pen );
+	            FT_Select_Charmap(face, FT_ENCODING_UNICODE);
+	            
+	            int a = 0;
+	            step = convert_unicode(text+n, &a);
+	            
+	            if (step == -1) {
+	                break;
+	            }
+	            
+	            if (a == 10 || a == 13) {
+	                
+	                if (a == 32) {
+	                    tmp_w = pen.x + slot->advance.x + text_size * 64 * word_spacing > tmp_w ? pen.x + slot->advance.x + text_size * 64 * word_spacing : tmp_w;
+	                }else {
+	                    tmp_w = pen.x + slot->advance.x + text_size * 64 * text_kerning > tmp_w ? pen.x + slot->advance.x + text_size * 64 * text_kerning : tmp_w;
+	                }
+	                
+	                pen.x = 0;
+	                pen.y -= text_size * line_spacing * 64;
+	                tmp_h += text_size * line_spacing;
+	                continue;
+	            }else if (a == 9) {
+	                pen.x += text_size * 0.5 * word_spacing * 4 * 64;
+	                continue;
+	            }
+	            
+	            error = FT_Load_Char(face, a, FT_LOAD_RENDER);
+	            
+	            if (a == 32) {
+	                pen.x += slot->advance.x + text_size * 64 * word_spacing;
+	            }else {
+	                pen.x += slot->advance.x + text_size * 64 * text_kerning;
+	            }
+	            num_text++;
+	        }
+	        
+	        long raw_w = pen.x > tmp_w ? pen.x : tmp_w;
+	        long raw_h = tmp_h * 1.15;
+	        raw_w /= 64;           
+
             im_w = (int)raw_w;
             im_h = (int)raw_h;
             
-            im_w += text_size * text_lean;
+            im_w += text_size * text_lean - text_size * (text_kerning - 1);
             
         }else if (mode_w_all) {
-            
-            int num_text_per_line = (im_w - text_size * text_lean) / text_size;
-            num_text_per_line = num_text_per_line <= 0 ? 1 : num_text_per_line;
-            int num_line = 0;
-            num_line = num_text / num_text_per_line;
-            num_line += (num_text % num_text_per_line > 0);
-            im_h = num_line * text_size + text_size * 0.15;
-            
+	
+			for (n = 0; n < num_chars; n+=step ) {
+			            
+	            FT_Set_Transform( face, &matrix, &pen );
+	            FT_Select_Charmap(face, FT_ENCODING_UNICODE);
+	            
+	            int a = 0;
+	            step = convert_unicode(text+n, &a);
+	            
+	            if (step == -1) {
+	                break;
+	            }
+	            
+	            if (a == 10 || a == 13) {
+	                pen.x = 0;
+	                line_num++;
+	                continue;
+	            }else if (a == 9) {
+	                pen.x += text_size * 0.5 * word_spacing * 4 * 64;
+				  if (pen.x >= (im_w - text_size * text_lean - text_size * (word_spacing - 1)) * 64) {
+		                pen.x = 0;
+		                line_num++;
+		            }
+	                continue;
+	            }
+	            
+	            error = FT_Load_Char(face, a, FT_LOAD_RENDER);
+	            
+	            if (a == 32) {
+	                pen.x += slot->advance.x + text_size * 64 * word_spacing;
+				  if (pen.x > (im_w - text_size * text_lean - text_size * (word_spacing - 1)) * 64) {
+		                pen.x = 0;
+		                line_num++;
+		           }
+	            }else {
+	                pen.x += slot->advance.x + text_size * 64 * text_kerning;
+				  if (pen.x > (im_w - text_size * text_lean - text_size * (text_kerning - 1)) * 64) {
+		                pen.x = 0;
+		                line_num++;
+		           }
+	            }
+	            num_text++;
+	        }
+	        
+            im_h = line_num * text_size * line_spacing  - (text_size * line_spacing - text_size) + text_size * 0.15;
         }
         
         //////////////////////////////////////////////////////////////////////////////
@@ -439,7 +477,7 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
             continue;
         }else if (a == 9) {
             pen.x += text_size * 0.5 * word_spacing * 4 * 64;
-            if (pen.x + slot->advance.x * word_spacing >= (im_w - text_size * text_lean) * 64) {
+            if (pen.x >= (im_w - text_size * text_lean - text_size * (word_spacing -1)) * 64) {
                 pen.x = 0;
                 pen.y -= text_size * line_spacing * 64;
             }
@@ -452,13 +490,13 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
         
         if (a == 32) {
             pen.x += slot->advance.x * word_spacing;
-            if (pen.x + slot->advance.x * word_spacing > (im_w - text_size * text_lean) * 64) {
+            if (pen.x > (im_w - text_size * text_lean - text_size * (word_spacing -1) ) * 64) {
                 pen.x = 0;
                 pen.y -= text_size * line_spacing * 64;
             }
         }else {
-            pen.x += slot->advance.x * text_kerning;
-            if (pen.x + slot->advance.x * text_kerning > (im_w - text_size * text_lean) * 64) {
+            pen.x += slot->advance.x + text_size * 64 * text_kerning;
+            if (pen.x > (im_w - text_size * text_lean - text_size * (text_kerning -1) ) * 64) {
                 pen.x = 0;
                 pen.y -= text_size * line_spacing * 64;
             }
