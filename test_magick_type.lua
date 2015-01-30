@@ -12,11 +12,11 @@ local mt = magick_type.new("Kaiti SC")
 
 --mt.print_font_table()
 
-local text = ffi.cast("char *", "测试一测试一下测试sssddssadsasd大苏打sd测试一\n测试一下字下字一下字测试一下字字下字111。1111。")
+local text = ffi.cast("char *", "字试一测试一下测试sssddssadsasd大苏打sd测试一测试一下字下字一下字测试一下字字下a字111。1111。哈")
 
 --size, color, style, lean, kerning, word_spacing, line_spacing
-mt:set_font(30, {255,0,0,255}, nil, nil, 2.5, 10, 3.5)
-print(mt:draw_text(text, -1, -1))
+mt:set_font(60, {0,234,124,255}, nil, nil, 20, 0, 0)
+print(mt:draw_text(text, 868, -1))
 
 local im = magick.constitute_image(mt.mt_image.im_w, mt.mt_image.im_h, "BGRA", "CharPixel", mt.mt_image.image_data)
 im:write("test_yui.png")

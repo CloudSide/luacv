@@ -304,125 +304,143 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
     
     slot = face->glyph;
     
+    // 计算要写的字数
     int num_text = 0;
-    if (!mode_w_h) {
-        //////////////////////////////////////////////////////////////////////////////
+    int k;
+    int step = 0;
+    for (k = 0; k < num_chars; k+=step ) {
+        int a = 0;
+        step = convert_unicode(text+k, &a);
         
-        matrix.xx = 0x10000L;
-        matrix.xy = text_lean * 0x10000L;
-        matrix.yx = 0;
-        matrix.yy = 0x10000L;
-        
-        pen.x = 0 * 64;
-        pen.y = 0;
-        
-        int step = 0;
-        long tmp_w = 0;
-        long tmp_h = text_size;
-        int n;
-		int line_num = 1;
-        
-        if (mode_all_all || mode_all_h) {
-
-		 	for (n = 0; n < num_chars; n+=step ) {
-	            
-	            FT_Set_Transform( face, &matrix, &pen );
-	            FT_Select_Charmap(face, FT_ENCODING_UNICODE);
-	            
-	            int a = 0;
-	            step = convert_unicode(text+n, &a);
-	            
-	            if (step == -1) {
-	                break;
-	            }
-	            
-	            if (a == 10 || a == 13) {
-	                
-	                if (a == 32) {
-	                    tmp_w = pen.x + slot->advance.x + text_size * 64 * word_spacing > tmp_w ? pen.x + slot->advance.x + text_size * 64 * word_spacing : tmp_w;
-	                }else {
-	                    tmp_w = pen.x + slot->advance.x + text_size * 64 * text_kerning > tmp_w ? pen.x + slot->advance.x + text_size * 64 * text_kerning : tmp_w;
-	                }
-	                
-	                pen.x = 0;
-	                pen.y -= text_size * line_spacing * 64;
-	                tmp_h += text_size * line_spacing;
-	                continue;
-	            }else if (a == 9) {
-	                pen.x += text_size * 0.5 * word_spacing * 4 * 64;
-	                continue;
-	            }
-	            
-	            error = FT_Load_Char(face, a, FT_LOAD_RENDER);
-	            
-	            if (a == 32) {
-	                pen.x += slot->advance.x + text_size * 64 * word_spacing;
-	            }else {
-	                pen.x += slot->advance.x + text_size * 64 * text_kerning;
-	            }
-	            num_text++;
-	        }
-	        
-	        long raw_w = pen.x > tmp_w ? pen.x : tmp_w;
-	        long raw_h = tmp_h * 1.15;
-	        raw_w /= 64;           
-
-            im_w = (int)raw_w;
-            im_h = (int)raw_h;
-            
-            im_w += text_size * text_lean - text_size * (text_kerning - 1);
-            
-        }else if (mode_w_all) {
-	
-			for (n = 0; n < num_chars; n+=step ) {
-			            
-	            FT_Set_Transform( face, &matrix, &pen );
-	            FT_Select_Charmap(face, FT_ENCODING_UNICODE);
-	            
-	            int a = 0;
-	            step = convert_unicode(text+n, &a);
-	            
-	            if (step == -1) {
-	                break;
-	            }
-	            
-	            if (a == 10 || a == 13) {
-	                pen.x = 0;
-	                line_num++;
-	                continue;
-	            }else if (a == 9) {
-	                pen.x += text_size * 0.5 * word_spacing * 4 * 64;
-				  if (pen.x >= (im_w - text_size * text_lean - text_size * (word_spacing - 1)) * 64) {
-		                pen.x = 0;
-		                line_num++;
-		            }
-	                continue;
-	            }
-	            
-	            error = FT_Load_Char(face, a, FT_LOAD_RENDER);
-	            
-	            if (a == 32) {
-	                pen.x += slot->advance.x + text_size * 64 * word_spacing;
-				  if (pen.x > (im_w - text_size * text_lean - text_size * (word_spacing - 1)) * 64) {
-		                pen.x = 0;
-		                line_num++;
-		           }
-	            }else {
-	                pen.x += slot->advance.x + text_size * 64 * text_kerning;
-				  if (pen.x > (im_w - text_size * text_lean - text_size * (text_kerning - 1)) * 64) {
-		                pen.x = 0;
-		                line_num++;
-		           }
-	            }
-	            num_text++;
-	        }
-	        
-            im_h = line_num * text_size * line_spacing  - (text_size * line_spacing - text_size) + text_size * 0.15;
+        if (step == -1) {
+            break;
         }
-        
-        //////////////////////////////////////////////////////////////////////////////
+        num_text++;
     }
     
+    // 计算每个字的宽度
+    int *text_width = (int *)malloc(num_text*sizeof(int));
+    
+    step = 0;
+    
+    matrix.xx = 0x10000L;
+    matrix.xy = text_lean * 0x10000L;
+    matrix.yx = 0;
+    matrix.yy = 0x10000L;
+    pen.x = 0 * 64;
+    pen.y = 0;
+    
+    int index = 0;
+    for (k = 0; k < num_chars; k+=step ) {
+        
+        FT_Set_Transform( face, &matrix, &pen );
+        FT_Select_Charmap(face, FT_ENCODING_UNICODE);
+        
+        int a = 0;
+        step = convert_unicode(text+k, &a);
+        
+        if (step == -1) {
+            break;
+        }
+        
+        error = FT_Load_Char(face, a, FT_LOAD_RENDER);
+        
+        if (a == 10) {
+            text_width[index] = 0;
+        }else if (a == 13) {
+            text_width[index] = -1;
+        }else if (a == 9) {
+            text_width[index] = text_size * 2 * 64;
+        }else if (a == 32) {
+            text_width[index] = text_size * 0.5 * 64 + word_spacing * 64;
+        }else {
+            text_width[index] = slot->advance.x;
+        }
+        
+        index++;
+    }
+    
+    // 计算图像宽高
+    int *text_return = (int *)malloc(num_text*sizeof(int));
+    int tr;
+    for (tr = 0; tr<num_text; tr++) {
+        text_return[tr] = -1;
+    }
+    
+    
+    matrix.xx = 0x10000L;
+    matrix.xy = text_lean * 0x10000L;
+    matrix.yx = 0;
+    matrix.yy = 0x10000L;
+    
+    pen.x = 0 * 64;
+    pen.y = 0;
+    
+    step = 0;
+    long tmp_w = 0;
+    long tmp_h = 0;
+    int n;
+    int line_num = 1;
+    
+    if (mode_all_all || mode_all_h) {
+        
+        long raw_w = 0;
+        long raw_h = 0;
+        for (n = 0; n<num_text; n++) {
+            
+            if (text_width[n] != 0) {
+                if (text_width[n] == -1) {
+                }else {
+                    raw_w += text_width[n] + text_kerning * 64;
+                }
+                
+            }else {
+                text_return[n] = 1;
+                line_num++;
+                tmp_w = raw_w > tmp_w ? raw_w : tmp_w;
+                raw_w = 0;
+            }
+        }
+        
+        im_w = raw_w > tmp_w ? raw_w : tmp_w;
+        im_w -= text_kerning * 64;
+        im_w /= 64;
+        im_h = line_num * (text_size + line_spacing)  - line_spacing + text_size * 0.15;
+        
+    }else if (mode_w_all || mode_w_h) {
+
+        long raw_w = 0;
+        for (n=0; n<num_text; n++) {
+            
+            if (text_width[n] != 0) {
+                
+                if (text_width[n] == -1) {
+                }else {
+                    raw_w += text_width[n] + text_kerning * 64;
+                    if (raw_w - text_kerning * 64 >= im_w * 64) {
+                        text_return[n] = 1;
+                        line_num++;
+                        raw_w = text_width[n] + text_kerning * 64;
+                    }
+                }
+            }else {
+                text_return[n] = 1;
+                line_num++;
+                raw_w = 0;
+            }
+            
+            //printf("~~~ n(%d): %d    %ld    raw_w:%ld\n", n, text_return[n], text_width[n], raw_w);
+        }
+        
+        if (mode_w_h) {
+
+        }else {
+            im_h = line_num * (text_size + line_spacing)  - line_spacing + text_size * 0.15;
+        }
+        
+    }
+    
+    // 开始写字
     mt_image->im_w = im_w;
     mt_image->im_h = im_h;
     
@@ -457,8 +475,8 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
     int target_height = im_h;
     pen.y = (target_height-text_size) * 64;
     
-    int step = 0;
-    int n;
+    step = 0;
+    int k_text = 0;
     for (n = 0; n < num_chars; n+=step ) {
         
         FT_Set_Transform( face, &matrix, &pen );
@@ -471,38 +489,40 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
             break;
         }
         
-        if (a == 10 || a == 13) {
+        if (text_return[k_text] == 1) {
             pen.x = 0;
-            pen.y -= text_size * line_spacing * 64;
+            pen.y -= (text_size + line_spacing) * 64;
+            n -= step;
+            text_return[k_text] = -1;
             continue;
-        }else if (a == 9) {
-            pen.x += text_size * 0.5 * word_spacing * 4 * 64;
-            if (pen.x >= (im_w - text_size * text_lean - text_size * (word_spacing -1)) * 64) {
-                pen.x = 0;
-                pen.y -= text_size * line_spacing * 64;
-            }
+        }
+        
+        if (text_width[k_text] == 0) {
+            k_text++;
+            continue;
+        }
+        
+        if (text_width[k_text] == -1) {
+            k_text++;
+            continue;
+        }
+        
+        if (text_width[k_text] == text_size * 2 * 64) {
+            pen.x += text_width[k_text] + text_kerning * 64;
+            k_text++;
             continue;
         }
         
         error = FT_Load_Char(face, a, FT_LOAD_RENDER);
-        
         draw_bitmap(&slot->bitmap, image, slot->bitmap_left, target_height - slot->bitmap_top, im_w, im_h, *font.font_color, channels);
         
-        if (a == 32) {
-            pen.x += slot->advance.x * word_spacing;
-            if (pen.x > (im_w - text_size * text_lean - text_size * (word_spacing -1) ) * 64) {
-                pen.x = 0;
-                pen.y -= text_size * line_spacing * 64;
-            }
-        }else {
-            pen.x += slot->advance.x + text_size * 64 * text_kerning;
-            if (pen.x > (im_w - text_size * text_lean - text_size * (text_kerning -1) ) * 64) {
-                pen.x = 0;
-                pen.y -= text_size * line_spacing * 64;
-            }
-        }
+        pen.x += text_width[k_text] + text_kerning * 64;
+        
+        k_text++;
     }
     
+    free(text_width);
+    free(text_return);
     
     FT_Done_Face    ( face );
     FT_Done_FreeType( library );
