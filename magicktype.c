@@ -417,7 +417,7 @@ MT_Image *str_to_image(char *str, int im_w, int im_h, const char *font_name, MT_
                 if (text_width[n] == -1) {
                 }else {
                     raw_w += text_width[n] + text_kerning * 64;
-                    if (raw_w - text_kerning * 64 >= im_w * 64) {
+                    if (n > 0 && raw_w - text_kerning * 64 >= im_w * 64) {
                         text_return[n] = 1;
                         line_num++;
                         raw_w = text_width[n] + text_kerning * 64;
